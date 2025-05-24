@@ -1,34 +1,31 @@
 r"""
-Original code by David Ng in [GlaDOS](https://github.com/dnhkng/GlaDOS) (/glados/voice_recognition.py), licensed under the MIT License.
+Оригинальный код Дэвида Нг в [GlaDOS](https://github.com/dnhkng/GlaDOS) (/glados/voice_recognition.py), лицензированный по лицензии MIT.
 
-Original work Copyright (c) 2022 David Ng
-Modified work Copyright (c) 2024 Yi-Ting Chiu
+Оригинальная работа Copyright (c) 2022 David Ng
+Измененная работа Copyright (c) 2024 Yi-Ting Chiu
 
-This file incorporates work covered by the following copyright and permission notice:
+Этот файл включает работу, подпадающую под следующее уведомление об авторских правах и разрешении:
 
-MIT License
+Лицензия MIT
 
 Copyright (c) 2022 David Ng
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+Настоящим предоставляется бесплатное разрешение любому лицу, получающему копию
+этого программного обеспечения и связанных с ним файлов документации («Программное обеспечение»), на неограниченное использование Программного обеспечения,
+включая, помимо прочего, права на использование, копирование, изменение, объединение, публикацию, распространение, сублицензирование и/или продажу
+копий Программного обеспечения, а также на разрешение лицам, которым Программное обеспечение предоставляется для этого, при соблюдении следующих условий:
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+Вышеуказанное уведомление об авторских правах и это уведомление о разрешении должны быть включены во все
+копии или существенные части Программного обеспечения.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+ПРОГРАММНОЕ ОБЕСПЕЧЕНИЕ ПРЕДОСТАВЛЯЕТСЯ «КАК ЕСТЬ», БЕЗ КАКИХ-ЛИБО ГАРАНТИЙ, ЯВНЫХ ИЛИ
+ПОДРАЗУМЕВАЕМЫХ, ВКЛЮЧАЯ, ПОМИМО ПРОЧЕГО, ГАРАНТИИ ТОВАРНОЙ ПРИГОДНОСТИ,
+ПРИГОДНОСТИ ДЛЯ ОПРЕДЕЛЕННОЙ ЦЕЛИ И НЕНАРУШЕНИЯ ПРАВ. НИ В КОЕМ СЛУЧАЕ
+АВТОРЫ ИЛИ ВЛАДЕЛЬЦЫ АВТОРСКИХ ПРАВ НЕ НЕСУТ ОТВЕТСТВЕННОСТИ ЗА ЛЮБЫЕ ПРЕТЕНЗИИ, УЩЕРБ ИЛИ ДРУГУЮ
+ОТВЕТСТВЕННОСТЬ, БУДЬ ТО В РЕЗУЛЬТАТЕ ДЕЙСТВИЯ ДОГОВОРА, ПРАВОНАРУШЕНИЯ ИЛИ ИНЫМ ОБРАЗОМ, ВОЗНИКАЮЩИЕ ИЗ,
+В СВЯЗИ С ИЛИ В РЕЗУЛЬТАТЕ ИСПОЛЬЗОВАНИЯ ПРОГРАММНОГО ОБЕСПЕЧЕНИЯ ИЛИ ДРУГИХ ДЕЙСТВИЙ С ПРОГРАММНЫМ ОБЕСПЕЧЕНИЕМ.
 
-This modified version is also distributed under the MIT License.
+Эта измененная версия также распространяется по лицензии MIT.
 """
 
 import threading
@@ -37,177 +34,179 @@ from pathlib import Path
 from typing import Callable, List
 
 import numpy as np
-import sounddevice as sd
-from loguru import logger
+import sounddevice as sd # Библиотека для работы с аудиоустройствами
+from loguru import logger # Библиотека для логирования
 
 import sys
 import os
-current_dir = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(current_dir)
+current_dir = os.path.dirname(os.path.abspath(__file__)) # Текущий каталог
+sys.path.append(current_dir) # Добавление текущего каталога в путь поиска модулей
 
-import vad
+import vad # Модуль для детекции голосовой активности (VAD)
 
-# Using pathlib for OS-independent paths
-VAD_MODEL_PATH = Path(current_dir + "/models/silero_vad.onnx")
-SAMPLE_RATE = 16000  # Sample rate for input stream
-VAD_SIZE = 50  # Milliseconds of sample for Voice Activity Detection (VAD)
-VAD_THRESHOLD = 0.7  # Threshold for VAD detection
-BUFFER_SIZE = 600  # Milliseconds of buffer before VAD detection
-PAUSE_LIMIT = 1300  # Milliseconds of pause allowed before processing
-WAKE_WORD = "computer"  # Wake word for activation
-SIMILARITY_THRESHOLD = 2  # Threshold for wake word similarity
-
+# Использование pathlib для путей, независимых от ОС
+VAD_MODEL_PATH = Path(current_dir + "/models/silero_vad.onnx") # Путь к модели VAD
+SAMPLE_RATE = 16000  # Частота дискретизации для входного потока
+VAD_SIZE = 50  # Размер семпла в миллисекундах для детекции голосовой активности (VAD)
+VAD_THRESHOLD = 0.7  # Порог для детекции VAD
+BUFFER_SIZE = 600  # Размер буфера в миллисекундах перед детекцией VAD
+PAUSE_LIMIT = 1300  # Допустимая пауза в миллисекундах перед обработкой
+WAKE_WORD = "computer"  # Слово для активации (кодовое слово)
+SIMILARITY_THRESHOLD = 2  # Порог схожести для кодового слова
 
 
 class VoiceRecognitionVAD:
+    """Класс для распознавания голоса с использованием детекции голосовой активности (VAD)."""
     def __init__(
         self, asr_transcribe_func: Callable, wake_word: str | None = None, function: Callable = print
     ) -> None:
         """
-        Initializes the VoiceRecognition class, setting up necessary models, streams, and queues.
+        Инициализирует класс VoiceRecognition, настраивая необходимые модели, потоки и очереди.
 
-        This class is not thread-safe, so you should only use it from one thread. It works like this:
-        1. The audio stream is continuously listening for input.
-        2. The audio is buffered until voice activity is detected. This is to make sure that the
-            entire sentence is captured, including before voice activity is detected.
-        2. While voice activity is detected, the audio is stored, together with the buffered audio.
-        3. When voice activity is not detected after a short time (the PAUSE_LIMIT), the audio is
-            transcribed. If voice is detected again during this time, the timer is reset and the
-            recording continues.
-        4. After the voice stops, the listening stops, and the audio is transcribed.
-        5. If a wake word is set, the transcribed text is checked for similarity to the wake word.
-        6. The function is called with the transcribed text as the argument.
-        7. The audio stream is reset (buffers cleared), and listening continues.
+        Этот класс не является потокобезопасным, поэтому его следует использовать только из одного потока. Он работает следующим образом:
+        1. Аудиопоток непрерывно прослушивает входной сигнал.
+        2. Аудио буферизуется до тех пор, пока не будет обнаружена голосовая активность. Это делается для того, чтобы
+           захватить все предложение целиком, включая часть до обнаружения голосовой активности.
+        2. Пока голосовая активность обнаружена, аудио сохраняется вместе с буферизованным аудио.
+        3. Когда голосовая активность не обнаруживается в течение короткого времени (PAUSE_LIMIT), аудио
+           транскрибируется. Если в это время снова обнаруживается голос, таймер сбрасывается, и
+           запись продолжается.
+        4. После прекращения голоса прослушивание останавливается, и аудио транскрибируется.
+        5. Если установлено кодовое слово, транскрибированный текст проверяется на схожесть с кодовым словом.
+        6. Функция вызывается с транскрибированным текстом в качестве аргумента.
+        7. Аудиопоток сбрасывается (буферы очищаются), и прослушивание продолжается.
 
         Args:
-            asr_transcribe_func (Callable): The function to use for automatic speech recognition.
-            wake_word (str, optional): The wake word to use for activation. Defaults to None.
-            func (Callable, optional): The function to call when the wake word is detected. Defaults to print.
+            asr_transcribe_func (Callable): Функция, используемая для автоматического распознавания речи.
+            wake_word (str, optional): Кодовое слово для активации. По умолчанию None.
+            func (Callable, optional): Функция, вызываемая при обнаружении кодового слова. По умолчанию print.
         """
 
-        self._setup_audio_stream()
-        self._setup_vad_model()
-        self.transcribe = asr_transcribe_func
+        self._setup_audio_stream() # Настройка аудиопотока
+        self._setup_vad_model()    # Настройка модели VAD
+        self.transcribe = asr_transcribe_func # Функция транскрибации
 
-        # Initialize sample queues and state flags
-        self.samples = []
-        self.sample_queue = queue.Queue()
-        self.buffer = queue.Queue(maxsize=BUFFER_SIZE // VAD_SIZE)
-        self.recording_started = False
-        self.gap_counter = 0
-        self.wake_word = wake_word
+        # Инициализация очередей семплов и флагов состояния
+        self.samples = [] # Список для хранения семплов
+        self.sample_queue = queue.Queue() # Очередь для семплов из аудиопотока
+        self.buffer = queue.Queue(maxsize=BUFFER_SIZE // VAD_SIZE) # Буфер для предварительной записи
+        self.recording_started = False # Флаг начала записи
+        self.gap_counter = 0 # Счетчик пауз
+        self.wake_word = wake_word # Кодовое слово
 
     def _setup_audio_stream(self):
         """
-        Sets up the audio input stream with sounddevice.
+        Настраивает входной аудиопоток с использованием sounddevice.
         """
         self.input_stream = sd.InputStream(
             samplerate=SAMPLE_RATE,
-            channels=1,
-            callback=self.audio_callback,
-            blocksize=int(SAMPLE_RATE * VAD_SIZE / 1000),
+            channels=1, # Моно-канал
+            callback=self.audio_callback, # Функция обратного вызова для обработки аудиоданных
+            blocksize=int(SAMPLE_RATE * VAD_SIZE / 1000), # Размер блока
         )
 
     def _setup_vad_model(self):
         """
-        Loads the Voice Activity Detection (VAD) model.
+        Загружает модель детекции голосовой активности (VAD).
         """
         self.vad_model = vad.VAD(model_path=VAD_MODEL_PATH)
         
 
     def audio_callback(self, indata, frames, time, status):
         """
-        Callback function for the audio stream, processing incoming data.
+        Функция обратного вызова для аудиопотока, обрабатывающая входящие данные.
         """
         data = indata.copy()
-        data = data.squeeze()  # Reduce to single channel if necessary
-        vad_confidence = self.vad_model.process_chunk(data) > VAD_THRESHOLD
-        self.sample_queue.put((data, vad_confidence))
+        data = data.squeeze()  # Уменьшение до одного канала, если необходимо
+        vad_confidence = self.vad_model.process_chunk(data) > VAD_THRESHOLD # Определение уверенности VAD
+        self.sample_queue.put((data, vad_confidence)) # Помещение данных и уверенности VAD в очередь
 
     def start(self):
         """
-        Starts the Glados voice assistant, continuously listening for input and responding.
+        Запускает голосового ассистента, непрерывно прослушивая входной сигнал и отвечая.
+        (Этот метод, похоже, предназначен для непрерывной работы с кодовым словом)
         """
-        logger.info("Starting Listening...")
+        logger.info("Запуск прослушивания...")
         self.input_stream.start()
-        logger.info("Listening Running")
+        logger.info("Прослушивание запущено")
         return self._listen_and_respond()
     
     def start_listening(self) -> str:
         """
-        Start listening for audio input and responds appropriately when active voice is detected.
-        This function will return the transcribed text once a pause is detected.
-        It uses the `transcribe` function provided in the constructor to transcribe the audio.
+        Начинает прослушивание аудиовхода и соответствующим образом реагирует при обнаружении активного голоса.
+        Эта функция вернет транскрибированный текст после обнаружения паузы.
+        Она использует функцию `transcribe`, предоставленную в конструкторе, для транскрибации аудио.
         
         Returns:
-            str: The transcribed text
+            str: Транскрибированный текст.
         """
         self.input_stream.start()
-        logger.info("Starting Listening...")
-        logger.info("Listening Running")
-        return self._listen_and_respond(returnText=True)
+        logger.info("Запуск прослушивания...")
+        logger.info("Прослушивание запущено")
+        return self._listen_and_respond(returnText=True) # returnText=True указывает, что нужно вернуть текст
 
     def _listen_and_respond(self, returnText=False):
         """
-        Listens for audio input and responds appropriately when the wake word is detected.
+        Прослушивает аудиовход и соответствующим образом реагирует при обнаружении кодового слова (если установлено).
+        Если returnText=True, возвращает транскрибированный текст.
         """
-        logger.info("Listening...")
-        while True:  # Loop forever, but is 'paused' when new samples are not available
-            sample, vad_confidence = self.sample_queue.get()
-            result = self._handle_audio_sample(sample, vad_confidence)
+        logger.info("Прослушивание...")
+        while True:  # Бесконечный цикл, "приостанавливается", когда нет новых семплов
+            sample, vad_confidence = self.sample_queue.get() # Получение семпла из очереди
+            result = self._handle_audio_sample(sample, vad_confidence) # Обработка семпла
 
-            if result:
+            if result: # Если есть результат (транскрибированный текст)
                 if returnText:
-                    # if we return the text and are not starting the listening again, we can reset the recorder without blocking
-                    threading.Thread(target=self.reset).start()
-                    # self.reset()
+                    # Если мы возвращаем текст и не запускаем прослушивание снова, мы можем сбросить рекордер без блокировки
+                    threading.Thread(target=self.reset).start() # Сброс в отдельном потоке
+                    # self.reset() # Синхронный сброс (закомментировано)
                     return result
-                self.reset()
-                self.input_stream.start()
+                self.reset() # Сброс состояния
+                self.input_stream.start() # Перезапуск потока
 
     def _handle_audio_sample(self, sample, vad_confidence):
         """
-        Handles the processing of each audio sample.
+        Обрабатывает каждый аудиосемпл.
         """
-        if not self.recording_started:
-            self._manage_pre_activation_buffer(sample, vad_confidence)
-        else:
-            return self._process_activated_audio(sample, vad_confidence)
+        if not self.recording_started: # Если запись еще не началась
+            self._manage_pre_activation_buffer(sample, vad_confidence) # Управление буфером до активации
+        else: # Если запись уже идет
+            return self._process_activated_audio(sample, vad_confidence) # Обработка активированного аудио
 
     def _manage_pre_activation_buffer(self, sample, vad_confidence):
         """
-        Manages the buffer of audio samples before activation (i.e., before the voice is detected).
+        Управляет буфером аудиосемплов до активации (т.е. до обнаружения голоса).
         """
         if self.buffer.full():
-            self.buffer.get()  # Discard the oldest sample to make room for new ones
-        self.buffer.put(sample)
+            self.buffer.get()  # Удаление самого старого семпла, чтобы освободить место для нового
+        self.buffer.put(sample) # Добавление нового семпла в буфер
 
-        if vad_confidence:  # Voice activity detected
-            self.samples = list(self.buffer.queue)
-            self.recording_started = True
+        if vad_confidence:  # Обнаружена голосовая активность
+            self.samples = list(self.buffer.queue) # Копирование буфера в основной список семплов
+            self.recording_started = True # Установка флага начала записи
 
     def _process_activated_audio(self, sample: np.ndarray, vad_confidence: bool):
         """
-        Processes audio samples after activation (i.e., after the wake word is detected).
+        Обрабатывает аудиосемплы после активации (т.е. после обнаружения кодового слова или начала речи).
 
-        Uses a pause limit to determine when to process the detected audio. This is to
-        ensure that the entire sentence is captured before processing, including slight gaps.
+        Использует лимит паузы для определения момента обработки обнаруженного аудио. Это делается для
+        того, чтобы гарантировать захват всего предложения перед обработкой, включая небольшие паузы.
         """
 
-        self.samples.append(sample)
+        self.samples.append(sample) # Добавление семпла в список
 
-        if not vad_confidence:
-            self.gap_counter += 1
-            if self.gap_counter >= PAUSE_LIMIT // VAD_SIZE:
-                return self._process_detected_audio()
-        else:
-            self.gap_counter = 0
+        if not vad_confidence: # Если голосовая активность не обнаружена
+            self.gap_counter += 1 # Увеличение счетчика пауз
+            if self.gap_counter >= PAUSE_LIMIT // VAD_SIZE: # Если достигнут лимит пауз
+                return self._process_detected_audio() # Обработка обнаруженного аудио
+        else: # Если голосовая активность обнаружена
+            self.gap_counter = 0 # Сброс счетчика пауз
 
     # def _wakeword_detected(self, text: str) -> bool:
     #     """
-    #     Calculates the nearest Levenshtein distance from the detected text to the wake word.
+    #     Вычисляет ближайшее расстояние Левенштейна от обнаруженного текста до кодового слова.
 
-    #     This is used as 'Glados' is not a common word, and Whisper can sometimes mishear it.
+    #     Это используется, так как 'Glados' - не распространенное слово, и Whisper может иногда его неправильно расслышать.
     #     """
     #     words = text.split()
     #     closest_distance = min(
@@ -217,50 +216,52 @@ class VoiceRecognitionVAD:
 
     def _process_detected_audio(self):
         """
-        Processes the detected audio and generates a response.
+        Обрабатывает обнаруженное аудио и генерирует ответ (транскрипцию).
         """
-        logger.info("Detected pause after speech. Processing...")
+        logger.info("Обнаружена пауза после речи. Обработка...")
 
-        logger.info("Stopping listening...")
-        self.input_stream.stop()
+        logger.info("Остановка прослушивания...")
+        self.input_stream.stop() # Остановка аудиопотока
         
 
-        detected_text = self.asr(self.samples)
+        detected_text = self.asr(self.samples) # Распознавание речи из собранных семплов
 
         if detected_text:
-            logger.info(f"Detected: '{detected_text}'")
+            logger.info(f"Обнаружено: '{detected_text}'")
             return detected_text
 
-        # these two lines will never be reached because I made the function return the detected text
-        # so the reset function will be called in the _listen_and_respond function instead
+        # Эти две строки никогда не будут достигнуты, потому что я сделал так, чтобы функция возвращала обнаруженный текст,
+        # поэтому функция reset будет вызвана в функции _listen_and_respond
         # self.reset()
         # self.input_stream.start()
 
     def asr(self, samples: List[np.ndarray]) -> str:
         """
-        Performs automatic speech recognition on the collected samples.
+        Выполняет автоматическое распознавание речи на собранных семплах.
         """
-        audio = np.concatenate(samples)
+        audio = np.concatenate(samples) # Объединение списка семплов в один массив numpy
 
-        detected_text = self.transcribe(audio)
+        detected_text = self.transcribe(audio) # Транскрибация аудио
         return detected_text
 
     def reset(self):
         """
-        Resets the recording state and clears buffers.
+        Сбрасывает состояние записи и очищает буферы.
         """
-        logger.info("Resetting recorder...")
-        self.recording_started = False
-        self.samples.clear()
-        self.gap_counter = 0
-        with self.buffer.mutex:
-            self.buffer.queue.clear()
+        logger.info("Сброс рекордера...")
+        self.recording_started = False # Сброс флага начала записи
+        self.samples.clear() # Очистка списка семплов
+        self.gap_counter = 0 # Сброс счетчика пауз
+        with self.buffer.mutex: # Блокировка доступа к очереди буфера
+            self.buffer.queue.clear() # Очистка очереди буфера
 
 
 
 
 if __name__ == "__main__":
-    demo = VoiceRecognition()
-    demo.start()
-    # text = demo.transcribe_once()
+    # Пример использования (закомментирован)
+    # demo = VoiceRecognition() # VoiceRecognition не определен здесь, вероятно, это должно быть VoiceRecognitionVAD
+    # demo.start()
+    # text = demo.transcribe_once() # transcribe_once не определен
     # print(text)
+    pass # Добавлено для синтаксической корректности, если примеры закомментированы

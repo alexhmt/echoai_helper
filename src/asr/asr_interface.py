@@ -2,32 +2,43 @@ import abc
 import numpy as np
 
 class ASRInterface(metaclass=abc.ABCMeta):
+    """Абстрактный базовый класс (интерфейс) для систем распознавания речи (ASR)."""
     
     @abc.abstractmethod
     def transcribe_with_local_vad(self) -> str:
-        """Activate the microphone on this device, transcribe audio when a pause in speech is detected using VAD, and return the transcription.
+        """
+        Активирует микрофон на этом устройстве, транскрибирует аудио при обнаружении паузы в речи с использованием VAD (Voice Activity Detection) 
+        и возвращает транскрипцию.
         
-        This method should block until a transcription is available.
+        Этот метод должен блокироваться до тех пор, пока не будет доступна транскрипция.
         
         Returns:
-            The transcription of the speech audio.
-            """
+            str: Транскрипция речевого аудио.
+        """
         pass
     
     @abc.abstractmethod
     def transcribe_np(self, audio: np.ndarray) -> str:
-        """Transcribe speech audio in numpy array format and return the transcription.
+        """
+        Транскрибирует речевое аудио в формате массива numpy и возвращает транскрипцию.
 
         Args:
-            audio: The numpy array of the audio data to transcribe.
+            audio (np.ndarray): Массив numpy с аудиоданными для транскрибации.
+            
+        Returns:
+            str: Транскрибированный текст.
         """
         pass
 
     @abc.abstractmethod
-    def transcribe_wav(self, audio) -> str:
-        """Transcribe speech audio in numpy array format and return the transcription.
+    def transcribe_wav(self, audio_path: str) -> str: # Изменено имя аргумента для ясности
+        """
+        Транскрибирует речевое аудио из WAV-файла и возвращает транскрипцию.
 
         Args:
-            audio: The numpy array of the audio data to transcribe.
+            audio_path (str): Путь к WAV-файлу для транскрибации.
+            
+        Returns:
+            str: Транскрибированный текст.
         """
         pass

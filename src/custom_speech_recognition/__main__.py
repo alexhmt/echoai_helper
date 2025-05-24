@@ -4,21 +4,23 @@ r = sr.Recognizer()
 m = sr.Microphone()
 
 try:
-    print("A moment of silence, please...")
-    with m as source: r.adjust_for_ambient_noise(source)
-    print("Set minimum energy threshold to {}".format(r.energy_threshold))
+    print("Минутку тишины, пожалуйста...")
+    with m as source: r.adjust_for_ambient_noise(source) # Калибровка под окружающий шум
+    print("Установлен минимальный порог энергии на {}".format(r.energy_threshold))
     while True:
-        print("Say something!")
-        with m as source: audio = r.listen(source)
-        print("Got it! Now to recognize it...")
+        print("Скажите что-нибудь!")
+        with m as source: audio = r.listen(source) # Прослушивание аудио с микрофона
+        print("Понял! Теперь распознаем...")
         try:
-            # recognize speech using Google Speech Recognition
+            # распознавание речи с использованием Google Speech Recognition
             value = r.recognize_google(audio)
 
-            print("You said {}".format(value))
+            # мы предполагаем, что пользователь говорит по-английски, поэтому используем формат Unicode U+0000 – U+007F
+            # для простоты выводим строку как есть
+            print("Вы сказали: {}".format(value))
         except sr.UnknownValueError:
-            print("Oops! Didn't catch that")
+            print("Ой! Не удалось распознать речь")
         except sr.RequestError as e:
-            print("Uh oh! Couldn't request results from Google Speech Recognition service; {0}".format(e))
+            print("Ох! Не удалось запросить результаты у службы Google Speech Recognition; {0}".format(e))
 except KeyboardInterrupt:
-    pass
+    pass # Выход по Ctrl+C

@@ -15,96 +15,96 @@ class GPTResponder:
         self._lock = threading.Lock()
         self._processing = False
         self._last_processed_id = None
-        # 初始化OpenAI配置
+        # Инициализация конфигурации OpenAI
         if not self._initialize_openai():
-            raise ValueError("Failed to initialize OpenAI configuration. Please check your API key and LLM settings.")
+            raise ValueError("Не удалось инициализировать конфигурацию OpenAI. Проверьте ваш API-ключ и настройки LLM.")
 
     def _initialize_openai(self) -> bool:
         """
-        初始化OpenAI或兼容的LLM配置
+        Инициализирует конфигурацию OpenAI или совместимого LLM.
         
         Returns:
-            bool: 初始化成功返回True，否则返回False
+            bool: True в случае успешной инициализации, иначе False.
         """
         llm_provider = EnvConfig.get_llm_provider()
         api_base_url = EnvConfig.get_llm_api_base_url()
 
         if api_base_url:
             openai.api_base = api_base_url
-            print(f"Using custom API base URL: {api_base_url}")
+            print(f"Используется пользовательский базовый URL API: {api_base_url}")
 
-        # Proceed with API key setup if it's OpenAI or an OpenAI-compatible API (indicated by api_base_url)
+        # Продолжить с настройкой API-ключа, если это OpenAI или OpenAI-совместимый API (указано через api_base_url)
         if llm_provider == "openai" or api_base_url:
-            if not EnvConfig.ensure_api_key(): # This check is now conditional in EnvConfig
-                print("API key check failed for OpenAI or custom OpenAI-compatible provider.")
+            if not EnvConfig.ensure_api_key(): # Эта проверка теперь условная в EnvConfig
+                print("Проверка API-ключа не удалась для OpenAI или пользовательского OpenAI-совместимого провайдера.")
                 return False
             openai.api_key = EnvConfig.get_openai_key()
-            print(f"Using OpenAI API key for provider: {llm_provider}")
+            print(f"Используется API-ключ OpenAI для провайдера: {llm_provider}")
         elif llm_provider != "openai":
-            # Handle other providers if necessary in the future.
-            # For now, if it's not 'openai' and no api_base is set,
-            # we assume it might be a configuration for a different, non-OpenAI SDK integration.
-            # The current structure will likely fail if it's not OpenAI compatible.
-            print(f"LLM Provider is '{llm_provider}'. No API key or base URL configured for direct OpenAI SDK usage.")
-            # Depending on future providers, we might return True or handle differently.
-            # For now, if it's not openai and no base_url, it implies we can't use openai SDK directly.
-            # However, ensure_api_key in EnvConfig is already provider-aware.
-            # Let's rely on ensure_api_key's logic for now.
+            # Обработка других провайдеров при необходимости в будущем.
+            # На данный момент, если это не 'openai' и api_base не установлен,
+            # мы предполагаем, что это может быть конфигурация для другой, не OpenAI SDK интеграции.
+            # Текущая структура, скорее всего, не сработает, если она не совместима с OpenAI.
+            print(f"Провайдер LLM: '{llm_provider}'. API-ключ или базовый URL не настроены для прямого использования OpenAI SDK.")
+            # В зависимости от будущих провайдеров, мы можем вернуть True или обработать иначе.
+            # Пока что, если это не openai и нет base_url, это означает, что мы не можем напрямую использовать openai SDK.
+            # Однако, ensure_api_key в EnvConfig уже учитывает провайдера.
+            # Будем пока полагаться на логику ensure_api_key.
             if not EnvConfig.ensure_api_key():
-                 print(f"API key check failed for provider: {llm_provider}")
+                 print(f"Проверка API-ключа не удалась для провайдера: {llm_provider}")
                  return False
-            # If a non-OpenAI provider still uses an API key set via OPENAI_API_KEY, it would be loaded here.
-            # This part might need refinement when other providers are actively supported.
+            # Если не-OpenAI провайдер все еще использует API-ключ, установленный через OPENAI_API_KEY, он будет загружен здесь.
+            # Эта часть может потребовать доработки при активной поддержке других провайдеров.
             loaded_key = EnvConfig.get_openai_key()
             if loaded_key and loaded_key != 'your_api_key_here':
-                openai.api_key = loaded_key # This might be okay if the other provider uses a similar key mechanism
-                print(f"Loaded API key for provider: {llm_provider}. Behavior depends on provider's SDK/API.")
+                openai.api_key = loaded_key # Это может быть приемлемо, если другой провайдер использует схожий механизм ключей
+                print(f"Загружен API-ключ для провайдера: {llm_provider}. Поведение зависит от SDK/API провайдера.")
             else:
-                print(f"No specific API key found or configured for non-OpenAI provider '{llm_provider}' via OPENAI_API_KEY.")
+                print(f"Конкретный API-ключ не найден или не настроен для не-OpenAI провайдера '{llm_provider}' через OPENAI_API_KEY.")
 
 
         return True
 
     def _generate_response_from_transcript(self, lastContent, latest_response_text="", latest_response_q_text="", current_response_id=None):
         """
-        从转录内容生成流式回复
+        Генерирует потоковый ответ из содержимого транскрипции.
         
         Args:
-            lastContent (str): 最新的转录内容
-            latest_response_text (str): 上一次的回复内容
-            latest_response_q_text (str): 上一次的问题内容
-            current_response_id (str): 当前响应的ID
+            lastContent (str): Последнее содержимое транскрипции.
+            latest_response_text (str): Содержимое предыдущего ответа.
+            latest_response_q_text (str): Содержимое предыдущего вопроса.
+            current_response_id (str): ID текущего ответа.
             
         Yields:
-            str: 生成的部分回复内容
+            str: Сгенерированная часть содержимого ответа.
         """
-        # 添加对短内容的过滤
+        # Добавляем фильтрацию короткого содержимого
         if lastContent.strip() == "" or len(lastContent.strip()) < 4:
-            print(f"Skipping due to too short content (length: {len(lastContent.strip())})")
+            print(f"Пропуск из-за слишком короткого содержимого (длина: {len(lastContent.strip())})")
             return
 
         conversation_history = []
-        recent_speakers = [f"Speaker: [{latest_response_q_text}]\n\n"]
+        recent_speakers = [f"Speaker: [{latest_response_q_text}]\n\n"] # "Speaker" можно оставить, т.к. это часть формата промпта
         conversation_history.extend(recent_speakers)
 
-        # 添加调试信息
-        #print(f"\nDebug generate_response_from_transcript:")
-        #print(f"Latest response: {latest_response_text}")
+        # Добавить отладочную информацию
+        #print(f"\nОтладка generate_response_from_transcript:")
+        #print(f"Последний ответ: {latest_response_text}")
         
-        # 将记录组合成字符串
+        # Объединить записи в строку
         recent_transcript = "".join(conversation_history)
-        #print(f"Recent transcript: {recent_transcript}")
-        #print(f"Last content: {lastContent}")
+        #print(f"Недавняя транскрипция: {recent_transcript}")
+        #print(f"Последнее содержимое: {lastContent}")
         
         try:
             content = create_prompt(recent_speakers, lastContent, latest_response_text)
-            #print(f"Created prompt: {content}")
+            #print(f"Созданный промпт: {content}")
 
-            # Get model name from config
+            # Получить имя модели из конфигурации
             model_name = EnvConfig.get_llm_model_name()
-            print(f"Using LLM model: {model_name}")
+            print(f"Используется модель LLM: {model_name}")
 
-            # 使用流式API
+            # Использовать потоковый API
             stream = openai.chat.completions.create(
                 model=model_name,
                 messages=[
@@ -112,7 +112,7 @@ class GPTResponder:
                     {"role": "user", "content": content},
                 ],
                 temperature=0.6,
-                stream=True  # 启用流式响应
+                stream=True  # Включить потоковый ответ
             )
 
             accumulated_response = ""
@@ -121,14 +121,14 @@ class GPTResponder:
                     chunk_content = chunk.choices[0].delta.content
                     accumulated_response += chunk_content
                     
-                    # 尝试解析方括号中的内容
+                    # Попытка разобрать содержимое в квадратных скобках
                     try:
                         if '[' in accumulated_response and ']' in accumulated_response:
                             response_text = accumulated_response.split("[")[1].split("]")[0]
                         else:
                             response_text = accumulated_response
                             
-                        # 更新响应
+                        # Обновить ответ
                         if current_response_id:
                             self.response = response_text
                             self.response_manager.update_response(
@@ -140,17 +140,17 @@ class GPTResponder:
                         yield response_text
                         
                     except Exception as e:
-                        print(f"Error parsing chunk: {e}")
+                        print(f"Ошибка разбора чанка: {e}")
                         yield chunk_content
 
-            # 完成后标记为完整响应
+            # По завершении пометить как полный ответ
             if current_response_id:
                 try:
-                    # 尝试获取方括号中的内容，如果失败则使用完整响应
+                    # Попытка получить содержимое в квадратных скобках, если не удается, использовать полный ответ
                     if '[' in accumulated_response and ']' in accumulated_response:
                         final_response = accumulated_response.split("[")[1].split("]")[0]
                     else:
-                        print("No brackets found in response, using full response")
+                        print("В ответе не найдены квадратные скобки, используется полный ответ")
                         final_response = accumulated_response
                     
                     self.response_manager.update_response(
@@ -159,8 +159,8 @@ class GPTResponder:
                         is_complete=True
                     )
                 except Exception as e:
-                    print(f"Error processing final response: {e}")
-                    # 如果解析失败，使用累积的完整响应
+                    print(f"Ошибка обработки окончательного ответа: {e}")
+                    # Если разбор не удался, использовать накопленный полный ответ
                     self.response_manager.update_response(
                         current_response_id,
                         accumulated_response,
@@ -168,7 +168,7 @@ class GPTResponder:
                     )
                 
         except Exception as e:
-            print(f"Error in generate_response: {e}")
+            print(f"Ошибка в generate_response: {e}")
             error_message = str(e)
             if current_response_id:
                 self.response_manager.update_response(
@@ -180,14 +180,14 @@ class GPTResponder:
 
     def respond_to_transcriber(self, transcriber):
         """
-        持续监听并响应转录器的输出
+        Постоянно прослушивает и отвечает на вывод транскрибатора.
         
         Args:
-            transcriber: 转录器实例
+            transcriber: Экземпляр транскрибатора.
         """
         while True:
             try:
-                # 先等待 transcript_changed_event
+                # Сначала ждем transcript_changed_event
                 if transcriber.transcript_changed_event.wait(0.1):
                     transcriber.transcript_changed_event.clear()
                     
@@ -204,7 +204,7 @@ class GPTResponder:
                             
                             try:
                                 question_text = latest_record[0]
-                                self.response = "Thinking..."
+                                self.response = "Думаю..." # Thinking...
                                 self.response_manager.update_response(current_response_id, self.response)
                                 
                                 latest_response = self.response_manager.get_response(self._last_processed_id)
@@ -215,7 +215,7 @@ class GPTResponder:
                                     latest_response_q_text = latest_response.question_text
                                 
                                 response_text = ''
-                                # 使用生成器处理流式响应
+                                # Использовать генератор для обработки потокового ответа
                                 for response_text in self._generate_response_from_transcript(
                                     question_text,
                                     latest_response_text,
@@ -223,10 +223,10 @@ class GPTResponder:
                                     current_response_id
                                 ):
                                     if response_text.strip():
-                                        #print(f"Generated partial response: {response_text}")
+                                        #print(f"Сгенерирован частичный ответ: {response_text}")
                                         self.response = response_text
                                 
-                                print(f"Generated response: {response_text}")
+                                print(f"Сгенерированный ответ: {response_text}")
                                 self._last_processed_id = current_response_id
                                 
                             finally:
@@ -234,7 +234,7 @@ class GPTResponder:
                                     self._processing = False
             
             except Exception as e:
-                print(f"Error in respond_to_transcriber: {e}")
+                print(f"Ошибка в respond_to_transcriber: {e}")
                 time.sleep(0.1)
 
     def update_response_interval(self, interval):

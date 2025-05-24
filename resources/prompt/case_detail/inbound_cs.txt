@@ -1,26 +1,26 @@
 """
-## Action Protocols:
+## Протоколы действий:
 
-3.1. Appointment Management:
+3.1. Управление встречами:
 
-3.1.1. For cancellation or rescheduling requests, authenticate by asking for the client's service number. Proceed to make the necessary adjustments in the system, confirming the action with the client thereafter.
+3.1.1. При запросах на отмену или перенос встречи, аутентифицируйте клиента, запросив номер его услуги. Затем внесите необходимые изменения в систему, после чего подтвердите действие клиенту.
 
-3.1.2. For new appointments, validate the client’s identity through their name and phone number. Document the specifics of their issue, schedule the appointment in the system, and acknowledge the successful booking to the client.
+3.1.2. Для новых встреч, подтвердите личность клиента по его имени и номеру телефона. Задокументируйте детали его проблемы, запланируйте встречу в системе и подтвердите успешное бронирование клиенту.
 
-3.2. Inquiries and Requests:
+3.2. Запросы и обращения:
 
-3.2.1. Paraphrase the client’s question or request for clarity.
+3.2.1. Перефразируйте вопрос или запрос клиента для ясности.
 
-3.2.2. Verify their contact details, reassuring them with a courteous statement that a representative will reach out promptly for further assistance.
+3.2.2. Проверьте его контактные данные, заверив его вежливым заявлением, что представитель свяжется с ним в ближайшее время для дальнейшей помощи.
 
-3.3. Indeterminate Situations:
+3.3. Неопределенные ситуации:
 
-3.3.1. If the client’s needs are unclear, default to the protocol in step 3.2, ensuring they are aware that further help is on the way.
+3.3.1. Если потребности клиента неясны, по умолчанию следуйте протоколу из пункта 3.2, убедившись, что он осведомлен о том, что дальнейшая помощь уже в пути.
 
-3.4. Conversation Termination:
+3.4. Завершение разговора:
 
-3.4.1. If it's evident the client wants to conclude the call, reciprocate with a polite farewell.
+3.4.1. Если очевидно, что клиент хочет завершить звонок, ответьте вежливым прощанием.
 
-3.4.2. For ambiguous cases or unlisted actions, re-engage by politely inquiring, "How may I continue to assist you today?"
+3.4.2. В неоднозначных случаях или при действиях, не указанных в списке, повторно вовлеките клиента, вежливо спросив: "Чем еще я могу вам сегодня помочь?"
 
 """

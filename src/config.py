@@ -6,56 +6,56 @@ from dotenv import load_dotenv
 from typing import Optional
 
 class PathConfig:
-    """路径配置管理"""
+    """Управление конфигурацией путей"""
     
     @staticmethod
     def get_project_root():
-        """获取项目根目录"""
+        """Получить корневой каталог проекта"""
         if getattr(sys, 'frozen', False):
-            # 打包后的可执行文件目录
+            # Каталог исполняемого файла после упаковки
             return os.path.dirname(sys.executable)
         else:
-            # 开发环境中的项目根目录 (src的父目录)
+            # Корневой каталог проекта в среде разработки (родительский каталог src)
             return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     
     @staticmethod
     def get_resource_path():
-        """获取资源文件目录"""
+        """Получить каталог файлов ресурсов"""
         if getattr(sys, 'frozen', False):
-            # 打包后的资源目录
+            # Каталог ресурсов после упаковки
             return os.path.join(sys._MEIPASS, 'resources')
         else:
-            # 开发环境中的资源目录
+            # Каталог ресурсов в среде разработки
             return os.path.join(PathConfig.get_project_root(), 'resources')
     
     @staticmethod
     def get_config_path():
-        """获取配置文件目录"""
+        """Получить каталог конфигурационных файлов"""
         return os.path.join(PathConfig.get_resource_path(), 'config')
     
     @staticmethod
     def get_prompt_path():
-        """获取prompt目录"""
+        """Получить каталог для prompt'ов"""
         return os.path.join(PathConfig.get_resource_path(), 'prompt')
 
     @staticmethod
     def get_templates_path():
-        """获取模板目录"""
+        """Получить каталог шаблонов"""
         return os.path.join(PathConfig.get_resource_path(), 'templates')
         
     @staticmethod
     def get_models_path():
-        """获取模型文件目录"""
+        """Получить каталог файлов моделей"""
         return os.path.join(PathConfig.get_resource_path(), 'models')
 
 class EnvConfig:
-    """环境配置管理类"""
+    """Класс управления конфигурацией окружения"""
     
     _instance = None
     _initialized = False
-    _llm_provider = "openai"  # Default LLM provider
-    _llm_api_base_url = None  # Default API base URL (optional)
-    _llm_model_name = "gpt-4o-mini"  # Default model name
+    _llm_provider = "openai"  # Провайдер LLM по умолчанию
+    _llm_api_base_url = None  # Базовый URL API по умолчанию (опционально)
+    _llm_model_name = "gpt-4o-mini"  # Имя модели по умолчанию
     
     def __new__(cls):
         if cls._instance is None:
@@ -64,58 +64,58 @@ class EnvConfig:
     
     @classmethod
     def initialize(cls) -> None:
-        """初始化环境配置"""
+        """Инициализировать конфигурацию окружения"""
         if cls._initialized:
             return
         
-        # 获取.env文件路径
+        # Получить путь к файлу .env
         env_path = os.path.join(PathConfig.get_project_root(), '.env')
         
-        # 如果.env文件不存在，创建它
+        # Если файл .env не существует, создать его
         if not os.path.exists(env_path):
             cls.create_env_template(env_path)
-            print(f"Please set your OpenAI API key in {env_path}")
+            print(f"Пожалуйста, установите ваш OpenAI API ключ в {env_path}")
             return
         
-        # 加载.env文件
+        # Загрузить файл .env
         load_dotenv(env_path)
         
-        # Load LLM configuration from environment variables
+        # Загрузить конфигурацию LLM из переменных окружения
         cls._llm_provider = os.getenv('LLM_PROVIDER', cls._llm_provider)
         cls._llm_api_base_url = os.getenv('LLM_API_BASE_URL', cls._llm_api_base_url)
         cls._llm_model_name = os.getenv('LLM_MODEL_NAME', cls._llm_model_name)
 
-        # 验证API密钥
+        # Проверить API ключ
         if cls._llm_provider == "openai" and not os.getenv('OPENAI_API_KEY'):
-            print(f"OPENAI_API_KEY not found in {env_path} (required for OpenAI provider)")
-            print("Please add your OpenAI API key to the .env file")
+            print(f"OPENAI_API_KEY не найден в {env_path} (требуется для провайдера OpenAI)")
+            print("Пожалуйста, добавьте ваш OpenAI API ключ в файл .env")
             return
         
         cls._initialized = True
     
     @classmethod
     def create_env_template(cls, env_path: str) -> None:
-        """创建.env模板文件"""
+        """Создать шаблон файла .env"""
         template = (
-            "# OpenAI API Configuration\n"
+            "# Конфигурация OpenAI API\n"
             "OPENAI_API_KEY=your_api_key_here\n"
             "\n"
-            "# LLM Configuration (Optional)\n"
-            "# LLM_PROVIDER: The LLM provider to use (e.g., 'openai', 'custom'). Default: 'openai'\n"
+            "# Конфигурация LLM (опционально)\n"
+            "# LLM_PROVIDER: Используемый провайдер LLM (например, 'openai', 'custom'). По умолчанию: 'openai'\n"
             "LLM_PROVIDER=openai\n"
-            "# LLM_API_BASE_URL: Custom API base URL for the LLM provider (e.g., for local LLMs). Optional.\n"
+            "# LLM_API_BASE_URL: Пользовательский базовый URL API для провайдера LLM (например, для локальных LLM). Опционально.\n"
             "# LLM_API_BASE_URL=\n"
-            "# LLM_MODEL_NAME: The specific model name to use. Default: 'gpt-4o-mini'\n"
+            "# LLM_MODEL_NAME: Конкретное имя модели для использования. По умолчанию: 'gpt-4o-mini'\n"
             "LLM_MODEL_NAME=gpt-4o-mini\n"
             "\n"
-            "# Add other configuration variables below\n"
+            "# Добавьте другие переменные конфигурации ниже\n"
         )
         try:
             with open(env_path, 'w', encoding='utf-8') as f:
                 f.write(template)
-            print(f"Created template .env file at {env_path}")
+            print(f"Создан шаблон файла .env по адресу {env_path}")
         except Exception as e:
-            print(f"Error creating .env template: {e}")
+            print(f"Ошибка при создании шаблона .env: {e}")
     
     @classmethod
     def get_openai_key(cls) -> Optional[str]:
@@ -143,17 +143,17 @@ class EnvConfig:
     
     @classmethod
     def ensure_api_key(cls) -> bool:
-        # This check is now more nuanced; depends on the provider
+        # Эта проверка теперь более детализирована; зависит от провайдера
         if cls.get_llm_provider() == "openai":
             api_key = cls.get_openai_key()
             return bool(api_key and api_key != 'your_api_key_here')
-        # For other providers, API key might not be 'OPENAI_API_KEY' or might not be required
+        # Для других провайдеров API-ключ может не называться 'OPENAI_API_KEY' или может не требоваться
         return True
 
 class SystemConfig:
     _instance = None
     _system_role = ""
-    _record_only_mode = False  # Add new class variable for record-only mode
+    _record_only_mode = False  # Добавить новую переменную класса для режима "только запись"
 
     @classmethod
     def get_system_role(cls):
@@ -164,22 +164,22 @@ class SystemConfig:
         cls._system_role = role
     @classmethod
     def get_record_only_mode(cls):
-        """Get the current state of record-only mode"""
+        """Получить текущее состояние режима 'только запись'"""
         return cls._record_only_mode
 
     @classmethod
     def set_record_only_mode(cls, value: bool):
-        """Set the record-only mode state
+        """Установить состояние режима 'только запись'
         
         Args:
-            value (bool): True to enable record-only mode, False to disable
+            value (bool): True для включения режима 'только запись', False для выключения
         """
         cls._record_only_mode = bool(value)
         
 class AudioConfig:
     _instance = None
-    _phrase_timeout = 5.2  # 默认值
-    _buffer_chunks = 1     # 默认值
+    _phrase_timeout = 5.2  # Значение по умолчанию
+    _buffer_chunks = 1     # Значение по умолчанию
 
     @classmethod
     def get_buffer_chunks(cls):

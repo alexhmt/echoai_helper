@@ -1,4 +1,4 @@
-#src/ResponseManager.py
+# src/ResponseManager.py
 
 import uuid
 from dataclasses import dataclass
@@ -13,15 +13,16 @@ import pytz
 
 @dataclass
 class Response:
+    """Класс данных для хранения информации об одном ответе."""
     response_id: str
     question_time: datetime
     question_text: str
     response_time: Optional[datetime] = None
     response_text: Optional[str] = None
-    is_complete: bool = False
+    is_complete: bool = False # Флаг, указывающий, завершен ли ответ
 
     def to_dict(self):
-        """转换为可序列化的字典"""
+        """Преобразует объект Response в словарь, пригодный для сериализации."""
         return {
             'response_id': self.response_id,
             'question_time': self.question_time.isoformat() if self.question_time else None,
@@ -32,23 +33,27 @@ class Response:
         }
     
 class ResponseManager:
+    """
+    Класс для управления ответами. 
+    Отвечает за создание, обновление, хранение и экспорт ответов.
+    """
     def __init__(self):
-        self._responses: Dict[str, Response] = {}
-        self._lock = threading.Lock()
-        self._latest_response_id: Optional[str] = None
-        self._new_response_event = threading.Event()
-        # 获取本地时区
+        self._responses: Dict[str, Response] = {} # Словарь для хранения ответов
+        self._lock = threading.Lock() # Блокировка для потокобезопасного доступа
+        self._latest_response_id: Optional[str] = None # ID последнего ответа
+        self._new_response_event = threading.Event() # Событие для сигнализации о новом ответе
+        # Получение локальной временной зоны
         self._local_tz = datetime.now().astimezone().tzinfo
 
     def _convert_to_local_time(self, dt: datetime) -> datetime:
-        """将时间转换为本地时区"""
+        """Преобразует время в локальную временную зону."""
         if dt.tzinfo is None:
-            # 如果时间没有时区信息，假定为UTC
+            # Если у времени нет информации о временной зоне, предполагаем UTC
             dt = dt.replace(tzinfo=timezone.utc)
         return dt.astimezone(self._local_tz)
 
     def _format_datetime(self, dt: Optional[datetime]) -> Optional[str]:
-        """格式化日期时间为本地时间字符串"""
+        """Форматирует дату и время в строку локального времени."""
         if dt is None:
             return None
         local_dt = self._convert_to_local_time(dt)
@@ -56,87 +61,87 @@ class ResponseManager:
 
     def export_responses(self) -> list:
         """
-        导出所有响应数据为可序列化的格式
+        Экспортирует все данные ответов в формате, пригодном для сериализации.
         
         Returns:
-            list: 包含所有响应数据的列表
+            list: Список, содержащий все данные ответов.
         """
         with self._lock:
             try:
-                # 按时间顺序排序
+                # Сортировка ответов по времени в обратном хронологическом порядке (новые сначала)
                 sorted_responses = sorted(
                     self._responses.values(),
                     key=lambda x: x.question_time,
-                    reverse=True  # 最新的在前
+                    reverse=True  # Новые впереди
                 )
                 
-                # 转换为可序列化的格式
+                # Преобразование в формат, пригодный для сериализации
                 responses_data = [response.to_dict() for response in sorted_responses]
                 
-                print(f"Exporting {len(responses_data)} responses")  # 调试信息
+                print(f"Экспортируется {len(responses_data)} ответов")  # Отладочная информация
                 return responses_data
                 
             except Exception as e:
-                print(f"Error in export_responses: {e}")
+                print(f"Ошибка при экспорте ответов: {e}")
                 return []
 
     def save_responses_to_file(self, filepath: str) -> bool:
         """
-        将响应数据保存到JSON文件
+        Сохраняет данные ответов в JSON-файл.
         
         Args:
-            filepath (str): 文件保存路径
+            filepath (str): Путь для сохранения файла.
             
         Returns:
-            bool: 保存成功返回True，否则返回False
+            bool: True в случае успешного сохранения, иначе False.
         """
         try:
-            # 获取数据
+            # Получение данных
             data = self.export_responses()
             
             if not data:
-                print("No responses to export")
+                print("Нет ответов для экспорта")
                 return False
                 
-            print(f"Saving {len(data)} responses to {filepath}")  # 调试信息
+            print(f"Сохранение {len(data)} ответов в {filepath}")  # Отладочная информация
             
-            # 确保文件以.json结尾
+            # Убедиться, что файл имеет расширение .json
             if not filepath.endswith('.json'):
                 filepath += '.json'
             
-            # 保存文件
+            # Сохранение файла
             with open(filepath, 'w', encoding='utf-8') as f:
                 json.dump(data, f, ensure_ascii=False, indent=2)
                 
-            # 验证文件是否正确保存
+            # Проверка, что файл успешно сохранен
             if os.path.exists(filepath) and os.path.getsize(filepath) > 0:
-                print(f"Successfully saved to {filepath}")
+                print(f"Успешно сохранено в {filepath}")
                 return True
             else:
-                print(f"File was created but may be empty: {filepath}")
+                print(f"Файл был создан, но может быть пустым: {filepath}")
                 return False
                 
         except Exception as e:
-            print(f"Error saving responses: {e}")
+            print(f"Ошибка при сохранении ответов: {e}")
             import traceback
-            traceback.print_exc()  # 打印详细错误信息
+            traceback.print_exc()  # Печать подробной информации об ошибке
             return False
 
     def export_structured_conversation(self, structured_transcript: dict, reverse_chronological: bool = False) -> dict:
         """
-        基于structured_transcript导出完整的对话数据，使用本地时区
+        Экспортирует полные данные диалога на основе structured_transcript, используя локальную временную зону.
         """
         with self._lock:
             try:
-                # 获取combined messages
+                # Получение объединенных сообщений
                 combined_messages = list(structured_transcript.get("combined", []))
                 
-                # 提取speaker类型的消息
+                # Извлечение сообщений типа "speaker"
                 speaker_messages = []
                 other_messages = []
-                print (f'Combined: {combined_messages}')
-                print (f'---------------')
-                # 分离speaker和其他类型的消息
+                #print (f'Объединенные: {combined_messages}') # Отладка
+                #print (f'---------------') # Отладка
+                # Разделение сообщений "speaker" и других типов
                 for msg in combined_messages:
                     text, timestamp, response_id, speaker_type = msg
                     if speaker_type == "speaker":
@@ -144,155 +149,151 @@ class ResponseManager:
                     else:
                         other_messages.append(msg)
                 
-                # 如果有speaker消息，进行response_id前移处理
+                new_speaker_messages = [] # Инициализация здесь
+                # Если есть сообщения от "speaker", выполнить обработку сдвига response_id
                 if speaker_messages:
-                    # 获取所有response_ids
+                    # Получение всех response_id
                     response_ids = [msg[2] for msg in speaker_messages]  # [id1, id2, id3, ...]
                     
-                    # 创建一个新的空response id
-                    #new_first_id = response_ids[0]  # 保存第一个id用于复制
+                    # Сдвиг response_id (первый становится None, остальные сдвигаются)
+                    shifted_response_ids = [None] + response_ids[:-1] # [None, id1, id2, ...] - исправлено, чтобы последний ID не дублировался
                     
-                    # 后移response_ids
-                    shifted_response_ids = [None] + response_ids[0:]   # [None,id1,id2, id3, ..., ]
-                    
-                    # 更新speaker_messages的response_ids
-                    new_speaker_messages = []
+                    # Обновление response_id в speaker_messages
                     for i, msg in enumerate(speaker_messages):
-                        text, timestamp, _, speaker_type = msg
+                        text, timestamp, _, speaker_type = msg # Старый response_id игнорируется
                         new_response_id = shifted_response_ids[i]
                         new_speaker_messages.append((text, timestamp, new_response_id, speaker_type))
-                    
-                # 根据时间戳合并消息
+                else: # Если нет сообщений от спикера, new_speaker_messages остается пустым
+                    pass
+
+                # Объединение сообщений по временной метке
                 all_messages = []
                 all_messages.extend(new_speaker_messages)
-                #all_messages.extend(speaker_messages)
                 all_messages.extend(other_messages)
-                # 按时间戳排序
+                # Сортировка по временной метке
                 all_messages.sort(key=lambda x: x[1])
                 
-                # 设置排序
-                #if not reverse_chronological:
-                #    all_messages = all_messages[::-1]
-                # 如果需要倒序（从新到旧），则反转列表
+                # Установка порядка сортировки
+                # Если нужен обратный хронологический порядок (от новых к старым), инвертировать список
                 if reverse_chronological:
                     all_messages.reverse()                
 
-                # 构建response字典
+                # Создание словаря ответов для быстрого доступа
                 responses_dict = {}
-                for response_id, response in self._responses.items():
-                    if response_id:
-                        responses_dict[response_id] = {
-                            "id": response_id,
-                            "question_time": self._format_datetime(response.question_time),
-                            "question_text": response.question_text,
-                            "response_time": self._format_datetime(response.response_time),
-                            "response_text": response.response_text,
-                            "is_complete": response.is_complete
+                for response_id_key, response_obj in self._responses.items(): # Используем разные имена переменных
+                    if response_id_key: # Убедимся, что response_id_key не None
+                        responses_dict[response_id_key] = {
+                            "id": response_id_key,
+                            "question_time": self._format_datetime(response_obj.question_time),
+                            "question_text": response_obj.question_text,
+                            "response_time": self._format_datetime(response_obj.response_time),
+                            "response_text": response_obj.response_text,
+                            "is_complete": response_obj.is_complete
                         }
                 
-                # 创建导出数据结构
+                # Создание структуры данных для экспорта
                 export_data = {
                     "metadata": {
                         "export_time": self._format_datetime(datetime.now().astimezone(self._local_tz)),
-                        "version": "2.0",
-                        "total_messages": len(all_messages),
-                        "order": "newest_first" if reverse_chronological else "oldest_first",
-                        "timezone": str(self._local_tz)
+                        "version": "2.0", # Версия формата экспорта
+                        "total_messages": len(all_messages), # Общее количество сообщений
+                        "order": "newest_first" if reverse_chronological else "oldest_first", # Порядок сортировки
+                        "timezone": str(self._local_tz) # Временная зона
                     },
                     "conversation": {
                         "messages": []
                     }
                 }
                 
-                # 构建最终的消息列表
-                for idx, (text, timestamp, response_id, speaker_type) in enumerate(all_messages):
+                # Формирование окончательного списка сообщений
+                for idx, (text, timestamp, current_response_id, speaker_type) in enumerate(all_messages): # Используем current_response_id
                     message = {
                         "role": speaker_type,
                         "text": text,
                         "timestamp": self._format_datetime(timestamp),
-                        "response_id": response_id,
+                        "response_id": current_response_id,
                         "index": idx
                     }
                     
-                    # 只为有效的response_id添加响应
-                    if response_id and response_id in responses_dict:
-                        message["response"] = responses_dict[response_id]
+                    # Добавление ответа только для действительных response_id
+                    if current_response_id and current_response_id in responses_dict:
+                        message["response"] = responses_dict[current_response_id]
                     
                     export_data["conversation"]["messages"].append(message)
                 
-                # Debug输出
+                # Отладочный вывод
                 if hasattr(self, 'debug_mode') and self.debug_mode:
-                    print("\nDebug - Message Processing:")
-                    print("\nOriginal Speaker Messages:")
-                    for msg in speaker_messages:
-                        print(f"Text: {msg[0]}, Response ID: {msg[2]}")
+                    print("\nОтладка - Обработка сообщений:")
+                    print("\nИсходные сообщения спикера:")
+                    for msg in speaker_messages: # Используем оригинальные speaker_messages для отладки до сдвига
+                        print(f"Текст: {msg[0]}, ID ответа: {msg[2]}")
                         
-                    print("\nProcessed Messages:")
+                    print("\nОбработанные сообщения (в экспорте):")
                     for msg in export_data["conversation"]["messages"]:
                         if msg["role"] == "speaker":
-                            print(f"Text: {msg['text']}")
-                            print(f"Response ID: {msg['response_id']}")
+                            print(f"Текст: {msg['text']}")
+                            print(f"ID ответа: {msg['response_id']}")
                             if "response" in msg:
-                                print(f"Response Text: {msg['response']['response_text']}")
+                                print(f"Текст ответа: {msg['response']['response_text']}")
                             print("---")
                 
                 return export_data
                 
             except Exception as e:
-                print(f"Error in export_structured_conversation: {e}")
+                print(f"Ошибка при экспорте структурированного диалога: {e}")
                 traceback.print_exc()
                 return {}
                     
     def save_structured_conversation(self, filepath: str, structured_transcript: dict) -> bool:
         """
-        将结构化对话数据保存到JSON文件
+        Сохраняет структурированные данные диалога в JSON-файл.
         
         Args:
-            filepath: 文件保存路径
-            structured_transcript: 结构化的对话记录
+            filepath: Путь для сохранения файла.
+            structured_transcript: Структурированные записи диалога.
                 
         Returns:
-            bool: 保存成功返回True，否则返回False
+            bool: True в случае успешного сохранения, иначе False.
         """
         try:
-            # 获取结构化对话数据
-            data = structured_transcript
+            # Получение структурированных данных диалога
+            data = structured_transcript # structured_transcript уже является данными для сохранения
             
-            if not data or not data["conversation"]["messages"]:
-                print("No conversation data to export")
+            if not data or not data.get("conversation", {}).get("messages"): # Проверка наличия сообщений
+                print("Нет данных диалога для экспорта")
                 return False
                 
-            print(f"Saving conversation with {len(data['conversation']['messages'])} messages")
+            print(f"Сохранение диалога с {len(data['conversation']['messages'])} сообщениями")
             
-            # 确保文件扩展名正确
+            # Убедиться, что расширение файла правильное
             if not filepath.endswith('.json'):
                 filepath += '.json'
             
-            # 保存文件
+            # Сохранение файла
             with open(filepath, 'w', encoding='utf-8') as f:
                 json.dump(data, f, ensure_ascii=False, indent=2)
                 
-            # 验证文件保存成功
+            # Проверка успешности сохранения файла
             if os.path.exists(filepath) and os.path.getsize(filepath) > 0:
-                print(f"Successfully saved conversation to {filepath}")
+                print(f"Диалог успешно сохранен в {filepath}")
                 return True
             else:
-                print(f"File was created but may be empty: {filepath}")
+                print(f"Файл был создан, но может быть пустым: {filepath}")
                 return False
                 
         except Exception as e:
-            print(f"Error saving conversation: {e}")
+            print(f"Ошибка при сохранении диалога: {e}")
             traceback.print_exc()
             return False
 
     def create_response(self, question_time: datetime, question_text: str) -> str:
-        """为新的问题创建response记录，返回response_id"""
+        """Создает запись ответа для нового вопроса, возвращает response_id."""
         response_id = str(uuid.uuid4())
         with self._lock:
-            # 处理输入时间
-            if question_time.tzinfo is None:
-                question_time = question_time.replace(tzinfo=timezone.utc)
-            question_time = question_time.astimezone(self._local_tz)   
+            # Обработка времени ввода
+            if question_time.tzinfo is None: # Если нет информации о временной зоне
+                question_time = question_time.replace(tzinfo=timezone.utc) # Считаем UTC
+            question_time = question_time.astimezone(self._local_tz) # Конвертируем в локальное время   
 
             self._responses[response_id] = Response(
                 response_id=response_id,
@@ -304,42 +305,44 @@ class ResponseManager:
 
     def update_response(self, response_id: str, response_text: str, 
                     is_complete: bool = False, is_incremental: bool = False):
-        """更新response内容，支持增量更新"""
+        """Обновляет содержимое ответа, поддерживает инкрементное обновление."""
         with self._lock:
             if response_id not in self._responses:
-                return False
+                #print(f"Попытка обновить несуществующий response_id: {response_id}") # Отладка
+                return False # Ответ не найден
             
             response = self._responses[response_id]
-            if response.response_time is None:
+            if response.response_time is None: # Установить время ответа, если его еще нет
                 response.response_time = datetime.now().astimezone(self._local_tz)
             
-            if is_incremental:
+            if is_incremental: # Инкрементное добавление текста
                 response.response_text = (response.response_text or "") + response_text
-            else:
+            else: # Полная замена текста
                 response.response_text = response_text
                 
-            response.is_complete = is_complete
+            response.is_complete = is_complete # Обновление статуса завершенности
             
-            if is_complete:
+            if is_complete: # Если ответ завершен, сигнализировать событию
                 self._new_response_event.set()
             return True
             
     def get_response(self, response_id: str) -> Optional[Response]:
-        """获取指定response"""
-        #print(f"Get Response ID: {response_id}")
+        """Получает указанный ответ по его ID."""
+        #print(f"Получение Response ID: {response_id}")
         return self._responses.get(response_id)
     
     def get_latest_response(self) -> Optional[Response]:
-        """获取最新的response"""
-        print(f"Get latest response:\n\n")
-        print(f"Latest response_id: {self._latest_response_id} \n\n")
+        """Получает самый последний ответ."""
+        #print(f"Получение последнего ответа:\n\n") # Отладка
+        #print(f"ID последнего ответа: {self._latest_response_id} \n\n") # Отладка
 
         if self._latest_response_id:
             return self._responses.get(self._latest_response_id)
-        return None
+        return None # Если нет последнего ID, вернуть None
     
     def wait_for_new_response(self, timeout: Optional[float] = None) -> bool:
-        """等待新的完整response"""
-        result = self._new_response_event.wait(timeout)
-        self._new_response_event.clear()
+        """Ожидает нового полного ответа."""
+        result = self._new_response_event.wait(timeout) # Ожидание события
+        if result: # Если событие сработало
+            self._new_response_event.clear() # Сброс события
         return result
