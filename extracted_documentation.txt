@@ -1,0 +1,1628 @@
+# File: main.py
+
+## Functions
+
+### validate_phrase_timeout(value)
+ - Parameters:
+   - value
+ - Return Type: bool
+
+### validate_buffer_chunks(value)
+ - Parameters:
+   - value
+ - Return Type: bool
+
+### create_dropdown(root, options, row, column)
+ - Parameters:
+   - root
+   - options
+   - row
+   - column
+ - Return Type: tuple (ctk.CTkOptionMenu, ctk.StringVar)
+
+### create_buffer_config(root, transcriber)
+ - Parameters:
+   - root
+   - transcriber
+ - Return Type: ctk.CTkFrame
+
+### create_timeout_config(root)
+ - Parameters:
+   - root
+ - Return Type: ctk.CTkFrame
+
+### write_in_textbox(textbox, text)
+ - Parameters:
+   - textbox
+   - text
+
+### update_response_UI(responder, textbox, update_interval_slider_label, update_interval_slider, freeze_state, transcript_ui)
+ - Parameters:
+   - responder
+   - textbox
+   - update_interval_slider_label
+   - update_interval_slider
+   - freeze_state
+   - transcript_ui
+
+### clear_context_(transcriber, audio_queue)
+ - Parameters:
+   - transcriber
+   - audio_queue
+
+### clear_context(transcriber, audio_queue, transcript_ui)
+ - Docstring: 清除所有上下文
+ - Parameters:
+   - transcriber
+   - audio_queue
+   - transcript_ui
+
+### create_ui_components(root, response_manager, transcriber, audio_queue)
+ - Docstring: 创建并配置所有UI组件
+ - Parameters:
+   - root
+   - response_manager
+   - transcriber
+   - audio_queue
+ - Return Type: tuple
+
+### main()
+
+# File: src/AudioRecorder.py
+
+## Classes
+
+### BaseRecorder
+ - Docstring: Базовый класс для записи аудио.
+ - Methods:
+   - __init__(self, source, source_name)
+     - Parameters:
+       - self
+
+# File: src/asr/azure_asr.py
+
+## Classes
+
+### VoiceRecognition(ASRInterface)
+ - Docstring: Класс для распознавания речи с использованием Azure Cognitive Speech Services.
+ - Methods:
+   - __init__(self, subscription_key=os.getenv("AZURE_API_Key"), region=os.getenv("AZURE_REGION"), callback: Callable = print)
+     - Docstring: Инициализирует объект VoiceRecognition.
+       Args:
+       subscription_key (str, optional): Ключ подписки Azure. По умолчанию получается из переменной окружения AZURE_API_Key.
+       region (str, optional): Регион Azure. По умолчанию получается из переменной окружения AZURE_REGION.
+       callback (Callable, optional): Функция обратного вызова, вызываемая с распознанным текстом. По умолчанию print.
+     - Parameters:
+       - self
+       - subscription_key (default: os.getenv("AZURE_API_Key"))
+       - region (default: os.getenv("AZURE_REGION"))
+       - callback: Callable (default: print)
+   - _create_speech_recognizer(self, uses_default_microphone: bool = True) -> speechsdk.SpeechRecognizer
+     - Docstring: Создает и возвращает объект SpeechRecognizer.
+       Args:
+       uses_default_microphone (bool, optional): Использовать ли микрофон по умолчанию. По умолчанию True.
+       Returns:
+       speechsdk.SpeechRecognizer: Объект распознавателя речи.
+     - Parameters:
+       - self
+       - uses_default_microphone: bool (default: True)
+     - Return Type: speechsdk.SpeechRecognizer
+   - transcribe_with_local_vad(self) -> str
+     - Docstring: Транскрибирует речь с использованием локального VAD (Voice Activity Detection).
+       Примечание: Azure SDK обычно имеет встроенный VAD, поэтому этот метод может быть упрощен.
+       Returns:
+       str: Распознанный текст или пустая строка в случае неудачи.
+     - Parameters:
+       - self
+     - Return Type: str
+
+# File: src/custom_speech_recognition/__init__.py
+ - Module Docstring: Библиотека для выполнения распознавания речи с поддержкой нескольких движков и API, онлайн и офлайн.
+
+## Classes
+
+### AudioSource(object)
+ - Docstring: Абстрактный класс, представляющий источник аудио.
+ - Methods:
+   - __init__(self)
+   - __enter__(self)
+   - __exit__(self, exc_type, exc_value, traceback)
+
+### Microphone(AudioSource)
+ - Docstring: Создает новый экземпляр ``Microphone``, представляющий физический микрофон на компьютере... (summarized)
+ - Methods:
+   - __init__(self, device_index=None, sample_rate=None, chunk_size=1024, speaker=False, channels = 1)
+     - Parameters:
+       - self
+       - device_index (default: None)
+       - sample_rate (default: None)
+       - chunk_size (default: 1024)
+       - speaker (default: False)
+       - channels (default: 1)
+   - get_pyaudio() (staticmethod)
+     - Docstring: Импортирует модуль pyaudio и проверяет его версию. Вызывает исключения, если pyaudio не найден или установлена неправильная версия.
+     - Return Type: module
+   - list_microphone_names() (staticmethod)
+     - Docstring: Возвращает список имен всех доступных микрофонов...
+     - Return Type: list
+   - list_working_microphones() (staticmethod)
+     - Docstring: Возвращает словарь, сопоставляющий индексы устройств с именами микрофонов, для микрофонов, которые в данный момент улавливают звуки...
+     - Return Type: dict
+   - __enter__(self)
+     - Return Type: self
+   - __exit__(self, exc_type, exc_value, traceback)
+
+### Microphone.MicrophoneStream(object)
+ - Docstring: Внутренний класс-оболочка для потока PyAudio.
+ - Methods:
+   - __init__(self, pyaudio_stream)
+     - Parameters:
+       - self
+       - pyaudio_stream
+   - read(self, size)
+     - Parameters:
+       - self
+       - size
+     - Return Type: bytes
+   - close(self)
+     - Parameters:
+       - self
+
+### AudioFile(AudioSource)
+ - Docstring: Создает новый экземпляр ``AudioFile`` из аудиофайла WAV/AIFF/FLAC ``filename_or_fileobject``... (summarized)
+ - Methods:
+   - __init__(self, filename_or_fileobject)
+     - Parameters:
+       - self
+       - filename_or_fileobject
+   - __enter__(self)
+     - Return Type: self
+   - __exit__(self, exc_type, exc_value, traceback)
+
+### AudioFile.AudioFileStream(object)
+ - Docstring: Внутренний класс-оболочка для потока аудиофайла.
+ - Methods:
+   - __init__(self, audio_reader, little_endian, samples_24_bit_pretending_to_be_32_bit)
+     - Parameters:
+       - self
+       - audio_reader
+       - little_endian
+       - samples_24_bit_pretending_to_be_32_bit
+   - read(self, size=-1)
+     - Parameters:
+       - self
+       - size (default: -1)
+     - Return Type: bytes
+
+### Recognizer(AudioSource)
+ - Docstring: Класс Recognizer представляет собой набор функций для распознавания речи.
+ - Methods:
+   - __init__(self)
+     - Docstring: Создает новый экземпляр ``Recognizer``, который представляет собой набор функций распознавания речи.
+   - record(self, source, duration=None, offset=None)
+     - Docstring: Записывает до ``duration`` секунд аудио из ``source`` (экземпляр ``AudioSource``)...
+     - Parameters:
+       - self
+       - source
+       - duration (default: None)
+       - offset (default: None)
+     - Return Type: AudioData
+   - adjust_for_ambient_noise(self, source, duration=1)
+     - Docstring: Динамически настраивает порог энергии, используя аудио из ``source``...
+     - Parameters:
+       - self
+       - source
+       - duration (default: 1)
+   - snowboy_wait_for_hot_word(self, snowboy_location, snowboy_hot_word_files, source, timeout=None)
+     - Docstring: Ожидает произнесения кодового слова с использованием Snowboy.
+     - Parameters:
+       - self
+       - snowboy_location
+       - snowboy_hot_word_files
+       - source
+       - timeout (default: None)
+     - Return Type: tuple (bytes, float)
+   - listen(self, source, timeout=None, phrase_time_limit=None, snowboy_configuration=None, stream=False)
+     - Docstring: Записывает одну фразу из ``source`` (экземпляр ``AudioSource``)... (summarized)
+     - Parameters:
+       - self
+       - source
+       - timeout (default: None)
+       - phrase_time_limit (default: None)
+       - snowboy_configuration (default: None)
+       - stream (default: False)
+     - Return Type: (AudioData or generator)
+   - _listen(self, source, timeout=None, phrase_time_limit=None, snowboy_configuration=None, stream=False)
+     - Docstring: Внутренний метод для прослушивания аудио.
+     - Parameters: (Same as listen)
+     - Return Type: generator
+   - listen_in_background(self, source, callback, phrase_time_limit=None)
+     - Docstring: Запускает поток для многократной записи фраз из ``source``... (summarized)
+     - Parameters:
+       - self
+       - source
+       - callback
+       - phrase_time_limit (default: None)
+     - Return Type: function (stopper)
+   - recognize_sphinx(self, audio_data, language="en-US", keyword_entries=None, grammar=None, show_all=False)
+     - Docstring: Выполняет распознавание речи для ``audio_data`` (экземпляр ``AudioData``), используя CMU Sphinx... (summarized)
+     - Parameters: (Many, summarized)
+     - Return Type: (str or pocketsphinx.pocketsphinx.Decoder)
+   - recognize_google_cloud(self, audio_data, credentials_json=None, language="en-US", preferred_phrases=None, show_all=False)
+     - Docstring: Выполняет распознавание речи для ``audio_data`` (экземпляр ``AudioData``), используя Google Cloud Speech API... (summarized)
+     - Parameters: (Many, summarized)
+     - Return Type: (str or dict)
+   - recognize_wit(self, audio_data, key, show_all=False)
+     - Docstring: Выполняет распознавание речи для ``audio_data`` (экземпляр ``AudioData``), используя Wit.ai API... (summarized)
+     - Parameters:
+       - self
+       - audio_data
+       - key
+       - show_all (default: False)
+     - Return Type: (str or dict)
+   - recognize_azure(self, audio_data, key, language="en-US", profanity="masked", location="westus", show_all=False)
+     - Docstring: Выполняет распознавание речи для ``audio_data`` (экземпляр ``AudioData``), используя Microsoft Azure Speech API... (summarized)
+     - Parameters: (Many, summarized)
+     - Return Type: (tuple[str, float] or dict)
+   - recognize_bing(self, audio_data, key, language="en-US", show_all=False)
+     - Docstring: Выполняет распознавание речи для ``audio_data`` (экземпляр ``AudioData``), используя Microsoft Bing Speech API... (summarized)
+     - Parameters: (Many, summarized)
+     - Return Type: (str or dict)
+   - recognize_lex(self, audio_data, bot_name, bot_alias, user_id, content_type="audio/l16; rate=16000; channels=1", access_key_id=None, secret_access_key=None, region=None)
+     - Docstring: Выполняет распознавание речи для ``audio_data`` (экземпляр ``AudioData``), используя Amazon Lex API... (summarized)
+     - Parameters: (Many, summarized)
+     - Return Type: str
+   - recognize_houndify(self, audio_data, client_id, client_key, show_all=False)
+     - Docstring: Выполняет распознавание речи для ``audio_data`` (экземпляр ``AudioData``), используя Houndify API... (summarized)
+     - Parameters: (Many, summarized)
+     - Return Type: (tuple[str, float] or dict)
+   - recognize_amazon(self, audio_data, bucket_name=None, access_key_id=None, secret_access_key=None, region=None, job_name=None, file_key=None)
+     - Docstring: Выполняет распознавание речи для ``audio_data`` (экземпляр ``AudioData``), используя Amazon Transcribe... (summarized)
+     - Parameters: (Many, summarized)
+     - Return Type: (tuple[str, float] or None)
+   - recognize_assemblyai(self, audio_data, api_token, job_name=None, **kwargs)
+     - Docstring: Обертка для сервиса STT AssemblyAI.
+       https://www.assemblyai.com/
+     - Parameters: (Many, summarized)
+     - Return Type: (tuple[str, float] or None)
+   - recognize_ibm(self, audio_data, key, language="en-US", show_all=False)
+     - Docstring: Выполняет распознавание речи для ``audio_data`` (экземпляр ``AudioData``), используя IBM Speech to Text API... (summarized)
+     - Parameters: (Many, summarized)
+     - Return Type: (tuple[str, float or None] or dict)
+   - recognize_tensorflow(self, audio_data, tensor_graph='tensorflow-data/conv_actions_frozen.pb', tensor_label='tensorflow-data/conv_actions_labels.txt')
+     - Docstring: Выполняет распознавание речи для ``audio_data`` (экземпляр ``AudioData``), используя TensorFlow... (summarized)
+     - Parameters:
+       - self
+       - audio_data
+       - tensor_graph (default: 'tensorflow-data/conv_actions_frozen.pb')
+       - tensor_label (default: 'tensorflow-data/conv_actions_labels.txt')
+     - Return Type: (str or None)
+   - recognize_whisper(self, audio_data, model="base", show_dict=False, load_options=None, language=None, translate=False, **transcribe_options)
+     - Docstring: Выполняет распознавание речи для ``audio_data`` (экземпляр ``AudioData``), используя Whisper... (summarized)
+     - Parameters: (Many, summarized)
+     - Return Type: (str or dict)
+   - recognize_vosk(self, audio_data, language='en')
+     - Docstring: Распознает речь с помощью Vosk API.
+     - Parameters:
+       - self
+       - audio_data
+       - language (default: 'en')
+     - Return Type: str
+
+### PortableNamedTemporaryFile(object)
+ - Docstring: Ограниченная замена для ``tempfile.NamedTemporaryFile``...
+ - Methods:
+   - __init__(self, mode="w+b")
+     - Parameters:
+       - self
+       - mode (default: "w+b")
+   - __enter__(self)
+     - Return Type: self
+   - __exit__(self, exc_type, exc_value, traceback)
+   - write(self, *args, **kwargs)
+   - writelines(self, *args, **kwargs)
+   - flush(self, *args, **kwargs)
+
+## Functions
+
+### recognize_api(self, audio_data, client_access_token, language="en", session_id=None, show_all=False)
+ - Docstring: Распознает речь с помощью API.AI (теперь Dialogflow). Этот метод устарел.
+ - Parameters: (Many, summarized)
+ - Return Type: (str or dict)
+
+# File: src/custom_speech_recognition/__main__.py
+ - Module Docstring: None
+ - Note: This file is an example script demonstrating the usage of the speech_recognition library. It does not contain definitions intended for library use.
+
+# File: src/custom_speech_recognition/audio.py
+
+## Classes
+
+### AudioData(object)
+ - Docstring: Создает новый экземпляр ``AudioData``, представляющий монофонические аудиоданные...
+ - Methods:
+   - __init__(self, frame_data, sample_rate, sample_width)
+     - Parameters:
+       - self
+       - frame_data
+       - sample_rate
+       - sample_width
+   - get_segment(self, start_ms=None, end_ms=None)
+     - Docstring: Возвращает новый экземпляр ``AudioData``, обрезанный до заданного временного интервала...
+     - Parameters:
+       - self
+       - start_ms (default: None)
+       - end_ms (default: None)
+     - Return Type: AudioData
+   - get_raw_data(self, convert_rate=None, convert_width=None)
+     - Docstring: Возвращает байтовую строку, представляющую необработанные данные кадра для аудио...
+     - Parameters:
+       - self
+       - convert_rate (default: None)
+       - convert_width (default: None)
+     - Return Type: bytes
+   - get_wav_data(self, convert_rate=None, convert_width=None)
+     - Docstring: Возвращает байтовую строку, представляющую содержимое WAV-файла...
+     - Parameters:
+       - self
+       - convert_rate (default: None)
+       - convert_width (default: None)
+     - Return Type: bytes
+   - get_aiff_data(self, convert_rate=None, convert_width=None)
+     - Docstring: Возвращает байтовую строку, представляющую содержимое файла AIFF-C...
+     - Parameters:
+       - self
+       - convert_rate (default: None)
+       - convert_width (default: None)
+     - Return Type: bytes
+   - get_flac_data(self, convert_rate=None, convert_width=None)
+     - Docstring: Возвращает байтовую строку, представляющую содержимое файла FLAC...
+     - Parameters:
+       - self
+       - convert_rate (default: None)
+       - convert_width (default: None)
+     - Return Type: bytes
+
+## Functions
+
+### get_flac_converter()
+ - Docstring: Возвращает абсолютный путь к исполняемому файлу конвертера FLAC или вызывает OSError, если ни один не найден.
+ - Return Type: str
+
+# File: resources/prompt/system_role/inbound_cs.py
+ - Module Docstring: None
+ - Note: This file defines a multi-line string variable `SYSTEM_ROLE` used for system configuration. It does not contain definitions intended for typical library documentation.
+ - Variables:
+   - SYSTEM_ROLE (string)
+
+# File: resources/prompt/system_role/phone_interview.py
+ - Module Docstring: None
+ - Note: This file defines a multi-line string variable `SYSTEM_ROLE` used for system configuration. It does not contain definitions intended for typical library documentation.
+ - Variables:
+   - SYSTEM_ROLE (string)
+
+# File: src/prompts.py
+
+## Variables
+
+- INITIAL_RESPONSE
+
+## Functions
+
+### create_prompt(transcript, lastContent, latest_response_text="")
+ - Parameters:
+   - transcript
+   - lastContent
+   - latest_response_text (default: "")
+ - Return Type: str
+
+### shutil_which(pgm)
+ - Docstring: Совместимость с Python 2: бэкпорт ``shutil.which()`` из Python 3.
+ - Parameters:
+   - pgm
+ - Return Type: (str or None)
+
+# File: src/custom_speech_recognition/exceptions.py
+
+## Classes
+
+### SetupError(Exception)
+
+### WaitTimeoutError(Exception)
+
+### RequestError(Exception)
+
+### UnknownValueError(Exception)
+
+### TranscriptionNotReady(Exception)
+
+### TranscriptionFailed(Exception)
+
+# File: src/custom_speech_recognition/recognizers/__init__.py
+ - Module Docstring: None
+ - Note: This file is empty.
+
+# File: src/custom_speech_recognition/recognizers/google.py
+
+## Classes
+
+### RequestBuilder
+ - Methods:
+   - __init__(self, *, endpoint: str, key: str, language: str, filter_level: ProfanityFilterLevel) -> None
+     - Parameters:
+       - self
+       - endpoint: str
+       - key: str
+       - language: str
+       - filter_level: ProfanityFilterLevel
+     - Return Type: None
+   - build(self, audio_data: AudioData) -> Request
+     - Parameters:
+       - self
+       - audio_data: AudioData
+     - Return Type: Request
+   - build_url(self) -> str
+     - Docstring: >>> builder = RequestBuilder(endpoint="http://www.google.com/speech-api/v2/recognize", key="awesome-key", language="en-US", filter_level=0)
+       >>> builder.build_url()
+       'http://www.google.com/speech-api/v2/recognize?client=chromium&lang=en-US&key=awesome-key&pFilter=0'
+     - Parameters:
+       - self
+     - Return Type: str
+   - build_headers(self, audio_data: AudioData) -> RequestHeaders
+     - Docstring: >>> builder = RequestBuilder(endpoint="", key="", language="", filter_level=1)
+       >>> audio_data = AudioData(b"", 16_000, 1)
+       >>> builder.build_headers(audio_data)
+       {'Content-Type': 'audio/x-flac; rate=16000'}
+     - Parameters:
+       - self
+       - audio_data: AudioData
+     - Return Type: RequestHeaders
+   - build_data(self, audio_data: AudioData) -> bytes
+     - Parameters:
+       - self
+       - audio_data: AudioData
+     - Return Type: bytes
+   - to_convert_rate(sample_rate: int) -> int (staticmethod)
+     - Docstring: Audio samples must be at least 8 kHz
+       >>> RequestBuilder.to_convert_rate(16_000)
+       >>> RequestBuilder.to_convert_rate(8_000)
+       >>> RequestBuilder.to_convert_rate(7_999)
+       8000
+     - Parameters:
+       - sample_rate: int
+     - Return Type: int
+
+### OutputParser
+ - Methods:
+   - __init__(self, *, show_all: bool, with_confidence: bool) -> None
+     - Parameters:
+       - self
+       - show_all: bool
+       - with_confidence: bool
+     - Return Type: None
+   - parse(self, response_text: str)
+     - Parameters:
+       - self
+       - response_text: str
+     - Return Type: (dict or tuple or str)
+   - convert_to_result(response_text: str) -> Result (staticmethod)
+     - Docstring: (Contains doctests)
+     - Parameters:
+       - response_text: str
+     - Return Type: Result
+   - find_best_hypothesis(alternatives: list[Alternative]) -> Alternative (staticmethod)
+     - Docstring: (Contains doctests)
+     - Parameters:
+       - alternatives: list[Alternative]
+     - Return Type: Alternative
+
+## Functions
+
+### create_request_builder(*, endpoint: str, key: str | None = None, language: str = "en-US", filter_level: ProfanityFilterLevel = 0) -> RequestBuilder
+ - Parameters:
+   - endpoint: str
+   - key: str | None (default: None)
+   - language: str (default: "en-US")
+   - filter_level: ProfanityFilterLevel (default: 0)
+ - Return Type: RequestBuilder
+
+### obtain_transcription(request: Request, timeout: int) -> str
+ - Parameters:
+   - request: Request
+   - timeout: int
+ - Return Type: str
+
+### recognize_legacy(recognizer, audio_data: AudioData, key: str | None = None, language: str = "en-US", pfilter: ProfanityFilterLevel = 0, show_all: bool = False, with_confidence: bool = False, *, endpoint: str = ENDPOINT)
+ - Docstring: Performs speech recognition on ``audio_data`` (an ``AudioData`` instance), using the Google Speech Recognition API... (summarized)
+ - Parameters: (Many, summarized)
+ - Return Type: (str or dict or tuple)
+
+# File: src/custom_speech_recognition/recognizers/whisper.py
+
+## Functions
+
+### recognize_whisper_api(recognizer, audio_data: "AudioData", *, model: str = "whisper-1", api_key: str | None = None)
+ - Docstring: Performs speech recognition on ``audio_data`` (an ``AudioData`` instance), using the OpenAI Whisper API.
+   This function requires an OpenAI account; visit https://platform.openai.com/signup, then generate API Key in `User settings <https://platform.openai.com/account/api-keys>`__.
+   Detail: https://platform.openai.com/docs/guides/speech-to-text
+   Raises a ``speech_recognition.exceptions.SetupError`` exception if there are any issues with the openai installation, or the environment variable is missing.
+ - Parameters:
+   - recognizer
+   - audio_data: "AudioData"
+   - model: str (default: "whisper-1")
+   - api_key: str | None (default: None)
+ - Return Type: str
+
+# File: src/config.py
+
+## Classes
+
+### PathConfig
+ - Docstring: Управление конфигурацией путей
+ - Methods:
+   - get_project_root() (staticmethod)
+     - Docstring: Получить корневой каталог проекта
+     - Return Type: str
+   - get_resource_path() (staticmethod)
+     - Docstring: Получить каталог файлов ресурсов
+     - Return Type: str
+   - get_config_path() (staticmethod)
+     - Docstring: Получить каталог конфигурационных файлов
+     - Return Type: str
+   - get_prompt_path() (staticmethod)
+     - Docstring: Получить каталог для prompt'ов
+     - Return Type: str
+   - get_templates_path() (staticmethod)
+     - Docstring: Получить каталог шаблонов
+     - Return Type: str
+   - get_models_path() (staticmethod)
+     - Docstring: Получить каталог файлов моделей
+     - Return Type: str
+
+### EnvConfig
+ - Docstring: Класс управления конфигурацией окружения
+ - Methods:
+   - __new__(cls)
+   - initialize(cls) -> None (classmethod)
+     - Docstring: Инициализировать конфигурацию окружения
+     - Parameters:
+       - cls
+     - Return Type: None
+   - create_env_template(cls, env_path: str) -> None (classmethod)
+     - Docstring: Создать шаблон файла .env
+     - Parameters:
+       - cls
+       - env_path: str
+     - Return Type: None
+   - get_openai_key(cls) -> Optional[str] (classmethod)
+     - Parameters:
+       - cls
+     - Return Type: Optional[str]
+   - get_llm_provider(cls) -> str (classmethod)
+     - Parameters:
+       - cls
+     - Return Type: str
+   - get_llm_api_base_url(cls) -> Optional[str] (classmethod)
+     - Parameters:
+       - cls
+     - Return Type: Optional[str]
+   - get_llm_model_name(cls) -> str (classmethod)
+     - Parameters:
+       - cls
+     - Return Type: str
+   - ensure_api_key(cls) -> bool (classmethod)
+     - Parameters:
+       - cls
+     - Return Type: bool
+
+### SystemConfig
+ - Methods:
+   - get_system_role(cls) (classmethod)
+     - Parameters:
+       - cls
+     - Return Type: str
+   - set_system_role(cls, role) (classmethod)
+     - Parameters:
+       - cls
+       - role
+   - get_record_only_mode(cls) (classmethod)
+     - Docstring: Получить текущее состояние режима 'только запись'
+     - Parameters:
+       - cls
+     - Return Type: bool
+   - set_record_only_mode(cls, value: bool) (classmethod)
+     - Docstring: Установить состояние режима 'только запись'
+       Args:
+       value (bool): True для включения режима 'только запись', False для выключения
+     - Parameters:
+       - cls
+       - value: bool
+
+### AudioConfig
+ - Methods:
+   - get_buffer_chunks(cls) (classmethod)
+     - Parameters:
+       - cls
+     - Return Type: int
+   - set_buffer_chunks(cls, value) (classmethod)
+     - Parameters:
+       - cls
+       - value
+     - Return Type: bool
+   - get_phrase_timeout(cls) (classmethod)
+     - Parameters:
+       - cls
+     - Return Type: float
+   - set_phrase_timeout(cls, value) (classmethod)
+     - Parameters:
+       - cls
+       - value
+     - Return Type: bool
+
+# File: src/asr/vad.py
+ - Module Docstring: (License and copyright notice omitted for brevity)
+## Classes
+
+### VAD
+ - Docstring: Класс для детекции голосовой активности (VAD) с использованием модели ONNX.
+ - Methods:
+   - __init__(self, model_path: str, window_size_samples: int = int(SAMPLE_RATE / 10))
+     - Docstring: Инициализирует объект VAD.
+       Args:
+       model_path (str): Путь к файлу модели VAD в формате ONNX.
+       window_size_samples (int, optional): Размер окна в семплах для обработки. 
+       По умолчанию равен SAMPLE_RATE / 10 (100 мс при 16 кГц).
+     - Parameters:
+       - self
+       - model_path: str
+       - window_size_samples: int (default: int(SAMPLE_RATE / 10))
+   - reset(self)
+     - Docstring: Сбрасывает внутренние состояния (h и c) модели к начальным значениям.
+     - Parameters:
+       - self
+   - process_chunk(self, chunk: np.ndarray) -> np.ndarray
+     - Docstring: Обрабатывает один чанк (фрагмент) аудиоданных.
+       Args:
+       chunk (np.ndarray): Аудиочанк в виде массива numpy.
+       Returns:
+       np.ndarray: Результат детекции VAD для этого чанка (обычно вероятность наличия голоса).
+     - Parameters:
+       - self
+       - chunk: np.ndarray
+     - Return Type: np.ndarray
+
+# File: src/asr/whisper_cpp_asr.py
+
+## Classes
+
+### VoiceRecognition(ASRInterface)
+ - Docstring: Класс для распознавания речи с использованием Whisper.cpp.
+ - Methods:
+   - __init__(self, model_name: str = "base", model_dir="asr/models", language: str = "en", print_realtime: bool = False, print_progress: bool = False, **kwargs) -> None
+     - Docstring: Инициализирует объект VoiceRecognition для Whisper.cpp.
+       Args:
+       model_name (str, optional): Имя или путь к модели. По умолчанию "base".
+       model_dir (str, optional): Каталог моделей. По умолчанию "asr/models".
+       language (str, optional): Язык. По умолчанию "en".
+       print_realtime (bool, optional): Печать в реальном времени. По умолчанию False.
+       print_progress (bool, optional): Печать прогресса. По умолчанию False.
+       **kwargs: Дополнительные аргументы, передаваемые в конструктор pywhispercpp.model.Model.
+     - Parameters:
+       - self
+       - model_name: str (default: "base")
+       - model_dir (default: "asr/models")
+       - language: str (default: "en")
+       - print_realtime: bool (default: False)
+       - print_progress: bool (default: False)
+       - **kwargs
+     - Return Type: None
+   - transcribe_with_local_vad(self) -> str
+     - Docstring: Транскрибирует аудио с использованием локальной детекции голосовой активности (VAD).
+       Returns:
+       str: Распознанный текст.
+     - Parameters:
+       - self
+     - Return Type: str
+   - transcribe_np(self, audio: np.ndarray) -> str
+     - Docstring: Транскрибирует аудиоданные из массива numpy.
+       Args:
+       audio (np.ndarray): Массив numpy с аудиоданными для транскрибации.
+       Returns:
+       str: Распознанный текст.
+     - Parameters:
+       - self
+       - audio: np.ndarray
+     - Return Type: str
+   - process_file(self, audio: np.ndarray) -> np.ndarray
+     - Docstring: Обрабатывает весь аудиофайл (представленный как массив numpy) по чанкам.
+       Args:
+       audio (np.ndarray): Аудиоданные всего файла.
+       Returns:
+       np.ndarray: Массив результатов детекции VAD для каждого чанка.
+     - Parameters:
+       - self
+       - audio: np.ndarray
+     - Return Type: np.ndarray
+
+# File: src/asr/fun_asr.py
+
+## Classes
+
+### VoiceRecognition(ASRInterface)
+ - Docstring: Класс для распознавания речи с использованием моделей FunASR.
+ - Methods:
+   - __init__(self, model_name: str = "iic/SenseVoiceSmall", language: str = "auto", vad_model = None, punc_model=None, ncpu: int = None, hub: str = None, device: str = "cpu", sample_rate: int = 16000, use_itn: bool = False) -> None
+     - Docstring: Инициализирует объект VoiceRecognition для FunASR.
+       Args:
+       model_name (str, optional): Имя или путь к модели FunASR. По умолчанию "iic/SenseVoiceSmall".
+       language (str, optional): Язык для распознавания. По умолчанию "auto".
+       vad_model (str, optional): Имя или путь к модели VAD. По умолчанию None.
+       punc_model (str, optional): Имя или путь к модели пунктуации. По умолчанию None.
+       ncpu (int, optional): Количество ядер CPU. По умолчанию определяется библиотекой.
+       hub (str, optional): Хаб для загрузки моделей. По умолчанию None.
+       device (str, optional): Устройство для вычислений. По умолчанию "cpu".
+       sample_rate (int, optional): Ожидаемая частота дискретизации. По умолчанию 16000.
+       use_itn (bool, optional): Использовать ли инверсную нормализацию текста. По умолчанию False.
+     - Parameters:
+       - self
+       - model_name: str (default: "iic/SenseVoiceSmall")
+       - language: str (default: "auto")
+       - vad_model (default: None)
+       - punc_model (default: None)
+       - ncpu: int (default: None)
+       - hub: str (default: None)
+       - device: str (default: "cpu")
+       - sample_rate: int (default: 16000)
+       - use_itn: bool (default: False)
+     - Return Type: None
+   - transcribe_with_local_vad(self) -> str
+     - Docstring: Транскрибирует аудио с использованием локальной детекции голосовой активности (VAD).
+       Returns:
+       str: Распознанный текст.
+     - Parameters:
+       - self
+     - Return Type: str
+   - transcribe_wav(self, audio_path: str) -> str
+     - Docstring: Транскрибирует аудио из WAV-файла.
+       Args:
+       audio_path (str): Путь к WAV-файлу.
+       Returns:
+       str: Распознанный текст или пустая строка в случае ошибки.
+     - Parameters:
+       - self
+       - audio_path: str
+     - Return Type: str
+   - transcribe_np(self, audio: np.ndarray) -> str
+     - Docstring: Транскрибирует аудиоданные из массива numpy.
+       Args:
+       audio (np.ndarray): Массив numpy с аудиоданными для транскрибации.
+       Returns:
+       str: Распознанный текст или пустая строка в случае ошибки.
+     - Parameters:
+       - self
+       - audio: np.ndarray
+     - Return Type: str
+   - _numpy_to_wav_in_memory(self, numpy_array: np.ndarray, sample_rate: int) -> io.BytesIO
+     - Docstring: Преобразует массив numpy в WAV-формат в памяти.
+       Args:
+       numpy_array (np.ndarray): Аудиоданные в виде массива numpy.
+       sample_rate (int): Частота дискретизации.
+       Returns:
+       io.BytesIO: Объект BytesIO, содержащий аудиоданные в формате WAV.
+     - Parameters:
+       - self
+       - numpy_array: np.ndarray
+       - sample_rate: int
+     - Return Type: io.BytesIO
+
+# File: src/asr/openai_whisper_asr.py
+
+## Classes
+
+### VoiceRecognition(ASRInterface)
+ - Docstring: Класс для распознавания речи с использованием стандартной библиотеки OpenAI Whisper.
+ - Methods:
+   - __init__(self, name: str = "base", download_root: str = None, device="cpu") -> None
+     - Docstring: Инициализирует объект VoiceRecognition для OpenAI Whisper.
+       Args:
+       name (str, optional): Имя модели Whisper. По умолчанию "base".
+       download_root (str, optional): Каталог для загрузки модели. 
+       По умолчанию None (используется каталог по умолчанию Whisper).
+       device (str, optional): Устройство для выполнения модели. По умолчанию "cpu".
+     - Parameters:
+       - self
+       - name: str (default: "base")
+       - download_root: str (default: None)
+       - device (default: "cpu")
+     - Return Type: None
+   - transcribe_with_local_vad(self) -> str
+     - Docstring: Транскрибирует аудио с использованием локальной детекции голосовой активности (VAD).
+       Returns:
+       str: Распознанный текст.
+     - Parameters:
+       - self
+     - Return Type: str
+   - transcribe_np(self, audio: np.ndarray) -> str
+     - Docstring: Транскрибирует аудиоданные из массива numpy.
+       Args:
+       audio (np.ndarray): Массив numpy с аудиоданными для транскрибации.
+       Returns:
+       str: Распознанный текст.
+     - Parameters:
+       - self
+       - audio: np.ndarray
+     - Return Type: str
+
+# File: src/asr/faster_whisper_asr.py
+
+## Classes
+
+### VoiceRecognition(ASRInterface)
+ - Docstring: Класс для распознавания речи с использованием модели Faster Whisper.
+ - Methods:
+   - __init__(self, model_path: str = "distil-medium.en", download_root: str = None, language: str = "en", device: str = "auto") -> None
+     - Docstring: Инициализирует объект VoiceRecognition.
+       Args:
+       model_path (str, optional): Путь к локальной модели или имя модели для загрузки. 
+       По умолчанию "distil-medium.en".
+       download_root (str, optional): Каталог для загрузки модели. По умолчанию None (используется каталог кэша faster-whisper).
+       language (str, optional): Язык распознавания (например, "en", "ru"). По умолчанию "en".
+       device (str, optional): Устройство для выполнения модели ("auto", "cpu", "cuda"). 
+       По умолчанию "auto".
+     - Parameters:
+       - self
+       - model_path: str (default: "distil-medium.en")
+       - download_root: str (default: None)
+       - language: str (default: "en")
+       - device: str (default: "auto")
+     - Return Type: None
+   - transcribe_with_local_vad(self) -> str
+     - Docstring: Транскрибирует аудио с использованием локальной детекции голосовой активности (VAD).
+       Returns:
+       str: Распознанный текст.
+     - Parameters:
+       - self
+     - Return Type: str
+   - transcribe_np(self, audio: np.ndarray) -> str
+     - Docstring: Транскрибирует аудиоданные из массива numpy.
+       Args:
+       audio (np.ndarray): Массив numpy с аудиоданными для транскрибации.
+       Returns:
+       str: Распознанный текст или пустая строка, если ничего не распознано.
+     - Parameters:
+       - self
+       - audio: np.ndarray
+     - Return Type: str
+   - transcribe_np(self, audio: np.ndarray) -> str
+     - Docstring: Транскрибирует аудиоданные из массива numpy.
+       Args:
+       audio (np.ndarray): Массив numpy с аудиоданными для транскрибации.
+       Returns:
+       str: Распознанный текст или результат операции распознавания. 
+       (Примечание: возвращает объект результата, а не только текст)
+     - Parameters:
+       - self
+       - audio: np.ndarray
+     - Return Type: str
+
+# File: src/GPTResponder.py
+
+## Classes
+
+### GPTResponder
+ - Methods:
+   - __init__(self, response_manager)
+     - Parameters:
+       - self
+       - response_manager
+   - _initialize_openai(self) -> bool
+     - Docstring: Инициализирует конфигурацию OpenAI или совместимого LLM.
+       Returns:
+       bool: True в случае успешной инициализации, иначе False.
+     - Parameters:
+       - self
+     - Return Type: bool
+
+# File: src/asr/asr_factory.py
+
+## Classes
+
+### ASRFactory
+ - Docstring: Фабрика для создания экземпляров систем распознавания речи (ASR).
+ - Methods:
+   - get_asr_system(system_name: str, **kwargs) -> Type[ASRInterface] (staticmethod)
+     - Docstring: Получает экземпляр указанной системы ASR.
+       Args:
+       system_name (str): Название системы ASR (например, "Faster-Whisper", "FunASR").
+       **kwargs: Аргументы, специфичные для конкретной системы ASR.
+       Returns:
+       Type[ASRInterface]: Экземпляр класса, реализующего интерфейс ASRInterface.
+       Raises:
+       ValueError: Если указано неизвестное имя системы ASR.
+     - Parameters:
+       - system_name: str
+       - **kwargs
+     - Return Type: Type[ASRInterface]
+
+# File: src/asr/asr_interface.py
+
+## Classes
+
+### ASRInterface(metaclass=abc.ABCMeta)
+ - Docstring: Абстрактный базовый класс (интерфейс) для систем распознавания речи (ASR).
+ - Methods:
+   - transcribe_with_local_vad(self) -> str (abstractmethod)
+     - Docstring: Активирует микрофон на этом устройстве, транскрибирует аудио при обнаружении паузы в речи с использованием VAD (Voice Activity Detection) 
+       и возвращает транскрипцию.
+       Этот метод должен блокироваться до тех пор, пока не будет доступна транскрипция.
+       Returns:
+       str: Транскрипция речевого аудио.
+     - Parameters:
+       - self
+     - Return Type: str
+
+# File: src/asr/asr_with_vad.py
+ - Module Docstring: (License and copyright notice omitted for brevity)
+## Classes
+
+### VoiceRecognitionVAD
+ - Docstring: Класс для распознавания голоса с использованием детекции голосовой активности (VAD).
+ - Methods:
+   - __init__(self, asr_transcribe_func: Callable, wake_word: str | None = None, function: Callable = print) -> None
+     - Docstring: Инициализирует класс VoiceRecognition, настраивая необходимые модели, потоки и очереди... (summarized)
+     - Parameters:
+       - self
+       - asr_transcribe_func: Callable
+       - wake_word: str | None (default: None)
+       - function: Callable (default: print)
+     - Return Type: None
+   - _setup_audio_stream(self)
+     - Docstring: Настраивает входной аудиопоток с использованием sounddevice.
+     - Parameters:
+       - self
+   - _setup_vad_model(self)
+     - Docstring: Загружает модель детекции голосовой активности (VAD).
+     - Parameters:
+       - self
+   - audio_callback(self, indata, frames, time, status)
+     - Docstring: Функция обратного вызова для аудиопотока, обрабатывающая входящие данные.
+     - Parameters:
+       - self
+       - indata
+       - frames
+       - time
+       - status
+   - start(self)
+     - Docstring: Запускает голосового ассистента, непрерывно прослушивая входной сигнал и отвечая.
+       (Этот метод, похоже, предназначен для непрерывной работы с кодовым словом)
+     - Parameters:
+       - self
+     - Return Type: (implicitly None or the result of _listen_and_respond)
+   - start_listening(self) -> str
+     - Docstring: Начинает прослушивание аудиовхода и соответствующим образом реагирует при обнаружении активного голоса.
+       Эта функция вернет транскрибированный текст после обнаружения паузы.
+       Она использует функцию `transcribe`, предоставленную в конструкторе, для транскрибации аудио.
+       Returns:
+       str: Транскрибированный текст.
+     - Parameters:
+       - self
+     - Return Type: str
+   - _listen_and_respond(self, returnText=False)
+     - Docstring: Прослушивает аудиовход и соответствующим образом реагирует при обнаружении кодового слова (если установлено).
+       Если returnText=True, возвращает транскрибированный текст.
+     - Parameters:
+       - self
+       - returnText (default: False)
+     - Return Type: (str or None)
+   - _handle_audio_sample(self, sample, vad_confidence)
+     - Docstring: Обрабатывает каждый аудиосемпл.
+     - Parameters:
+       - self
+       - sample
+       - vad_confidence
+     - Return Type: (str or None)
+   - _manage_pre_activation_buffer(self, sample, vad_confidence)
+     - Docstring: Управляет буфером аудиосемплов до активации (т.е. до обнаружения голоса).
+     - Parameters:
+       - self
+       - sample
+       - vad_confidence
+   - _process_activated_audio(self, sample: np.ndarray, vad_confidence: bool)
+     - Docstring: Обрабатывает аудиосемплы после активации (т.е. после обнаружения кодового слова или начала речи).
+       Использует лимит паузы для определения момента обработки обнаруженного аудио. Это делается для
+       того, чтобы гарантировать захват всего предложения перед обработкой, включая небольшие паузы.
+     - Parameters:
+       - self
+       - sample: np.ndarray
+       - vad_confidence: bool
+     - Return Type: (str or None)
+   - _process_detected_audio(self)
+     - Docstring: Обрабатывает обнаруженное аудио и генерирует ответ (транскрипцию).
+     - Parameters:
+       - self
+     - Return Type: (str or None)
+   - asr(self, samples: List[np.ndarray]) -> str
+     - Docstring: Выполняет автоматическое распознавание речи на собранных семплах.
+     - Parameters:
+       - self
+       - samples: List[np.ndarray]
+     - Return Type: str
+   - reset(self)
+     - Docstring: Сбрасывает состояние записи и очищает буферы.
+     - Parameters:
+       - self
+   - transcribe_np(self, audio: np.ndarray) -> str (abstractmethod)
+     - Docstring: Транскрибирует речевое аудио в формате массива numpy и возвращает транскрипцию.
+       Args:
+       audio (np.ndarray): Массив numpy с аудиоданными для транскрибации.
+       Returns:
+       str: Транскрибированный текст.
+     - Parameters:
+       - self
+       - audio: np.ndarray
+     - Return Type: str
+   - transcribe_wav(self, audio_path: str) -> str (abstractmethod)
+     - Docstring: Транскрибирует речевое аудио из WAV-файла и возвращает транскрипцию.
+       Args:
+       audio_path (str): Путь к WAV-файлу для транскрибации.
+       Returns:
+       str: Транскрибированный текст.
+     - Parameters:
+       - self
+       - audio_path: str
+     - Return Type: str
+
+# File: src/TemplateManager.py
+ - Module Docstring: 
+src/template_manager.py
+Класс для управления системными ролями и шаблонами, отвечает за загрузку, обновление и поддержку шаблонов.
+
+## Classes
+
+### TemplateManager
+ - Docstring: Класс менеджера шаблонов, обрабатывает файлы шаблонов, связанные с системными ролями.
+ - Methods:
+   - _get_template_paths(cls) -> Dict[str, Tuple[str, str]] (classmethod)
+     - Docstring: Получает конфигурацию путей к шаблонам.
+     - Parameters:
+       - cls
+     - Return Type: Dict[str, Tuple[str, str]]
+   - initialize_default_role(cls) -> bool (classmethod)
+     - Docstring: Инициализирует системную роль по умолчанию.
+     - Parameters:
+       - cls
+     - Return Type: bool
+   - load_template(cls, filepath: str) -> str (classmethod)
+     - Docstring: Загружает содержимое файла шаблона.
+     - Parameters:
+       - cls
+       - filepath: str
+     - Return Type: str
+
+# File: src/TranscriptUI.py
+
+## Classes
+
+### TranscriptUI
+ - Docstring: Обрабатывает отображение и взаимодействие с UI записей диалога.
+ - Methods:
+   - __init__(self, textbox: ctk.CTkTextbox, response_manager: Any)
+     - Docstring: Инициализирует TranscriptUI.
+       Args:
+       textbox: CTkTextbox для отображения записей диалога.
+       response_manager: Экземпляр ResponseManager для управления ответами на диалоги.
+     - Parameters:
+       - self
+       - textbox: ctk.CTkTextbox
+       - response_manager: Any
+   - _initialize_default_lines(self) -> None
+     - Docstring: Инициализирует строки по умолчанию для Говорящего и Вас.
+     - Parameters:
+       - self
+     - Return Type: None
+   - _configure_textbox(self) -> None
+     - Docstring: Конфигурирует основные настройки текстового поля.
+     - Parameters:
+       - self
+     - Return Type: None
+   - toggle_debug(self, enabled: bool = None) -> None
+     - Docstring: Переключает режим отладки.
+       Args:
+       enabled: Если предоставлено, напрямую устанавливает состояние режима отладки;
+       если не предоставлено, переключает текущее состояние.
+     - Parameters:
+       - self
+       - enabled: bool (default: None)
+     - Return Type: None
+   - update_transcript(self, transcriber: Any) -> None
+     - Docstring: Обновляет отображение записей диалога (потоковое обновление).
+       Args:
+       transcriber: Экземпляр AudioTranscriber, содержащий данные записей диалога.
+     - Parameters:
+       - self
+       - transcriber: Any
+     - Return Type: None
+   - _get_new_records(self, transcriber: Any) -> List[Dict]
+     - Docstring: Получает новые записи диалога, включая новые и обновленные существующие записи.
+       Args:
+       transcriber: Экземпляр AudioTranscriber.
+       Returns:
+       List[Dict]: Список новых и обновленных записей.
+     - Parameters:
+       - self
+       - transcriber: Any
+     - Return Type: List[Dict]
+   - _append_new_records(self, records: List[Dict]) -> None
+     - Docstring: Добавляет новые записи в текстовое поле.
+     - Parameters:
+       - self
+       - records: List[Dict]
+     - Return Type: None
+   - _add_record_tags(self, position: str, record: Dict) -> None
+     - Docstring: Добавляет тег и интерактивность к записи.
+     - Parameters:
+       - self
+       - position: str
+       - record: Dict
+     - Return Type: None
+   - _add_record_tags_(self, position: str, record: Dict) -> None
+     - Docstring: Добавляет тег и интерактивность к записи. (Дублирующий метод, возможно, для отладки)
+       Args:
+       position: Позиция вставки.
+       record: Данные записи.
+     - Parameters:
+       - self
+       - position: str
+       - record: Dict
+     - Return Type: None
+   - _update_response_text_(self, response_text: str) -> None
+     - Docstring: Обновляет содержимое текстового поля ответа. (Дублирующий метод)
+     - Parameters:
+       - self
+       - response_text: str
+     - Return Type: None
+   - _update_response_text(self, response_text: str, question_text: str = None) -> None
+     - Docstring: Обновляет содержимое текстового поля ответа, включая вопрос и ответ.
+       Args:
+       response_text: Текст ответа.
+       question_text: Связанный текст вопроса.
+     - Parameters:
+       - self
+       - response_text: str
+       - question_text: str (default: None)
+     - Return Type: None
+   - _format_response_display(self, question_text: Optional[str], response_text: str) -> str
+     - Docstring: Форматирует отображение вопроса и ответа.
+       Args:
+       question_text: Текст вопроса.
+       response_text: Текст ответа.
+       Returns:
+       str: Отформатированный текст для отображения.
+     - Parameters:
+       - self
+       - question_text: Optional[str]
+       - response_text: str
+     - Return Type: str
+   - clear(self) -> None
+     - Docstring: Очищает все содержимое и счетчики.
+     - Parameters:
+       - self
+     - Return Type: None
+   - _on_response_update(self, response_id: str, response_text: str, is_complete: bool) -> None
+     - Docstring: Обратный вызов для обновления ответа.
+       Args:
+       response_id: ID ответа.
+       response_text: Обновленный текст ответа.
+       is_complete: Завершен ли ответ.
+     - Parameters:
+       - self
+       - response_id: str
+       - response_text: str
+       - is_complete: bool
+     - Return Type: None
+   - update_latest_response(self, response_id: str, response_text: str, question_text: str = None) -> None
+     - Docstring: Принудительно обновляет текст последнего ответа, независимо от состояния блокировки.
+     - Parameters:
+       - self
+       - response_id: str
+       - response_text: str
+       - question_text: str (default: None)
+     - Return Type: None
+   - add_click_handler(self, response_textbox: ctk.CTkTextbox) -> None
+     - Docstring: Добавляет обработчик событий клика.
+     - Parameters:
+       - self
+       - response_textbox: ctk.CTkTextbox
+     - Return Type: None
+   - is_response_frozen(self) -> bool
+     - Docstring: Проверяет, заблокирован ли ответ.
+       Returns:
+       bool: True, если ответ заблокирован, иначе False.
+     - Parameters:
+       - self
+     - Return Type: bool
+   - get_template_files(cls, category: str) -> List[str] (classmethod)
+     - Docstring: Получает все файлы шаблонов указанной категории.
+     - Parameters:
+       - cls
+       - category: str
+     - Return Type: List[str]
+   - update_system_role(cls, system_role_file: str, case_detail_file: str, knowledge_file: str) -> Optional[str] (classmethod)
+     - Docstring: Обновляет конфигурацию системной роли.
+     - Parameters:
+       - cls
+       - system_role_file: str
+       - case_detail_file: str
+       - knowledge_file: str
+     - Return Type: Optional[str]
+
+# File: src/TranscriberModels.py
+
+## Functions
+
+### get_model(use_api: bool)
+ - Docstring: Возвращает экземпляр транскрибатора в зависимости от флага use_api.
+   Args:
+   use_api (bool): Если True, возвращает APIWhisperTranscriber, иначе FunASRTranscriber.
+   Returns:
+   Union[APIWhisperTranscriber, FunASRTranscriber]: Экземпляр транскрибатора.
+ - Parameters:
+   - use_api: bool
+ - Return Type: Union[APIWhisperTranscriber, FunASRTranscriber]
+
+## Classes
+
+### FunASRTranscriber
+ - Docstring: Класс для транскрибации аудио с использованием FunASR.
+ - Methods:
+   - __init__(self)
+     - Parameters:
+       - self
+   - init_asr(self) -> ASRInterface
+     - Docstring: Инициализирует и возвращает систему ASR на основе конфигурации.
+     - Parameters:
+       - self
+     - Return Type: ASRInterface
+   - get_transcription(self, wav_file_path: str) -> str
+     - Docstring: Получает транскрипцию для указанного WAV-файла.
+       Args:
+       wav_file_path (str): Путь к WAV-файлу.
+       Returns:
+       str: Транскрибированный текст или пустая строка в случае ошибки.
+     - Parameters:
+       - self
+       - wav_file_path: str
+     - Return Type: str
+
+### WhisperTranscriber
+ - Docstring: Класс для транскрибации аудио с использованием Whisper.
+ (В данный момент этот класс, похоже, не используется активно в пользу FunASR или API)
+ - Methods:
+   - __init__(self)
+     - Parameters:
+       - self
+   - get_transcription(self, wav_file_path: str) -> str
+     - Docstring: Получает транскрипцию для указанного WAV-файла с использованием Whisper.
+       Args:
+       wav_file_path (str): Путь к WAV-файлу.
+       Returns:
+       str: Транскрибированный текст или пустая строка в случае ошибки.
+     - Parameters:
+       - self
+       - wav_file_path: str
+     - Return Type: str
+
+### APIWhisperTranscriber
+ - Docstring: Класс для транскрибации аудио с использованием OpenAI Whisper API.
+ - Methods:
+   - get_transcription(self, wav_file_path: str) -> str
+     - Docstring: Получает транскрипцию для указанного WAV-файла через OpenAI API.
+       Args:
+       wav_file_path (str): Путь к WAV-файлу.
+       Returns:
+       str: Транскрибированный текст или пустая строка в случае ошибки.
+     - Parameters:
+       - self
+       - wav_file_path: str
+     - Return Type: str
+   - ensure_template_directories(cls) -> None (classmethod)
+     - Docstring: Гарантирует существование всех каталогов шаблонов.
+     - Parameters:
+       - cls
+     - Return Type: None
+   - get_current_role(cls) -> Optional[str] (classmethod)
+     - Docstring: Получает текущую конфигурацию системной роли.
+     - Parameters:
+       - cls
+     - Return Type: Optional[str]
+
+# File: src/SettingsManager.py
+
+## Classes
+
+### SettingsManager
+ - Docstring: Управляет сохранением и загрузкой настроек приложения.
+ - Methods:
+   - __init__(self)
+     - Docstring: Инициализирует менеджер настроек.
+     - Parameters:
+       - self
+   - _migrate_old_settings(self)
+     - Docstring: Переносит файл настроек из старой версии.
+     - Parameters:
+       - self
+   - load_settings(self) -> Dict[str, Any]
+     - Docstring: Загружает настройки из файла.
+       Returns:
+       Dict[str, Any]: Словарь настроек.
+     - Parameters:
+       - self
+     - Return Type: Dict[str, Any]
+   - save_settings(self, settings: Dict[str, Any]) -> bool
+     - Docstring: Сохраняет настройки в файл.
+       Args:
+       settings: Словарь настроек для сохранения.
+       Returns:
+       bool: True в случае успешного сохранения, иначе False.
+     - Parameters:
+       - self
+       - settings: Dict[str, Any]
+     - Return Type: bool
+   - get_setting(self, key: str) -> Any
+     - Docstring: Получает значение указанной настройки.
+       Args:
+       key: Имя ключа настройки.
+       Returns:
+       Any: Значение настройки, или значение по умолчанию, если ключ не найден.
+     - Parameters:
+       - self
+       - key: str
+     - Return Type: Any
+   - update_setting(self, key: str, value: Any) -> bool
+     - Docstring: Обновляет значение указанной настройки.
+       Args:
+       key: Имя ключа настройки.
+       value: Новое значение настройки.
+       Returns:
+       bool: True в случае успешного обновления, иначе False.
+     - Parameters:
+       - self
+       - key: str
+       - value: Any
+     - Return Type: bool
+   - debug_mode(self) -> bool (property)
+     - Docstring: Включен ли режим отладки.
+     - Parameters:
+       - self
+     - Return Type: bool
+   - _generate_response_from_transcript(self, lastContent, latest_response_text="", latest_response_q_text="", current_response_id=None)
+     - Docstring: Генерирует потоковый ответ из содержимого транскрипции.
+       Args:
+       lastContent (str): Последнее содержимое транскрипции.
+       latest_response_text (str): Содержимое предыдущего ответа.
+       latest_response_q_text (str): Содержимое предыдущего вопроса.
+       current_response_id (str): ID текущего ответа.
+       Yields:
+       str: Сгенерированная часть содержимого ответа.
+     - Parameters:
+       - self
+       - lastContent
+       - latest_response_text (default: "")
+       - latest_response_q_text (default: "")
+       - current_response_id (default: None)
+     - Return Type: str (iterator)
+   - respond_to_transcriber(self, transcriber)
+     - Docstring: Постоянно прослушивает и отвечает на вывод транскрибатора.
+       Args:
+       transcriber: Экземпляр транскрибатора.
+     - Parameters:
+       - self
+       - transcriber
+   - update_response_interval(self, interval)
+     - Parameters:
+       - self
+       - interval
+
+# File: src/ResponseManager.py
+
+## Classes
+
+### Response
+ - Docstring: Класс данных для хранения информации об одном ответе.
+ - Methods:
+   - to_dict(self)
+     - Docstring: Преобразует объект Response в словарь, пригодный для сериализации.
+     - Parameters:
+       - self
+     - Return Type: dict
+
+### ResponseManager
+ - Docstring: Класс для управления ответами. 
+ Отвечает за создание, обновление, хранение и экспорт ответов.
+ - Methods:
+   - __init__(self)
+     - Parameters:
+       - self
+   - _convert_to_local_time(self, dt: datetime) -> datetime
+     - Docstring: Преобразует время в локальную временную зону.
+     - Parameters:
+       - self
+       - dt: datetime
+     - Return Type: datetime
+   - _format_datetime(self, dt: Optional[datetime]) -> Optional[str]
+     - Docstring: Форматирует дату и время в строку локального времени.
+     - Parameters:
+       - self
+       - dt: Optional[datetime]
+     - Return Type: Optional[str]
+   - export_responses(self) -> list
+     - Docstring: Экспортирует все данные ответов в формате, пригодном для сериализации.
+       Returns:
+       list: Список, содержащий все данные ответов.
+     - Parameters:
+       - self
+     - Return Type: list
+   - save_responses_to_file(self, filepath: str) -> bool
+     - Docstring: Сохраняет данные ответов в JSON-файл.
+       Args:
+       filepath (str): Путь для сохранения файла.
+       Returns:
+       bool: True в случае успешного сохранения, иначе False.
+     - Parameters:
+       - self
+       - filepath: str
+     - Return Type: bool
+   - export_structured_conversation(self, structured_transcript: dict, reverse_chronological: bool = False) -> dict
+     - Docstring: Экспортирует полные данные диалога на основе structured_transcript, используя локальную временную зону.
+     - Parameters:
+       - self
+       - structured_transcript: dict
+       - reverse_chronological: bool (default: False)
+     - Return Type: dict
+   - save_structured_conversation(self, filepath: str, structured_transcript: dict) -> bool
+     - Docstring: Сохраняет структурированные данные диалога в JSON-файл.
+       Args:
+       filepath: Путь для сохранения файла.
+       structured_transcript: Структурированные записи диалога.
+       Returns:
+       bool: True в случае успешного сохранения, иначе False.
+     - Parameters:
+       - self
+       - filepath: str
+       - structured_transcript: dict
+     - Return Type: bool
+   - create_response(self, question_time: datetime, question_text: str) -> str
+     - Docstring: Создает запись ответа для нового вопроса, возвращает response_id.
+     - Parameters:
+       - self
+       - question_time: datetime
+       - question_text: str
+     - Return Type: str
+   - update_response(self, response_id: str, response_text: str, is_complete: bool = False, is_incremental: bool = False)
+     - Docstring: Обновляет содержимое ответа, поддерживает инкрементное обновление.
+     - Parameters:
+       - self
+       - response_id: str
+       - response_text: str
+       - is_complete: bool (default: False)
+       - is_incremental: bool (default: False)
+     - Return Type: bool
+   - get_response(self, response_id: str) -> Optional[Response]
+     - Docstring: Получает указанный ответ по его ID.
+     - Parameters:
+       - self
+       - response_id: str
+     - Return Type: Optional[Response]
+   - get_latest_response(self) -> Optional[Response]
+     - Docstring: Получает самый последний ответ.
+     - Parameters:
+       - self
+     - Return Type: Optional[Response]
+   - wait_for_new_response(self, timeout: Optional[float] = None) -> bool
+     - Docstring: Ожидает нового полного ответа.
+     - Parameters:
+       - self
+       - timeout: Optional[float] (default: None)
+     - Return Type: bool
+
+# File: src/AudioTranscriber.py
+
+## Classes
+
+### AudioTranscriber
+ - Docstring: Класс для транскрибации аудио с микрофона и системных звуков (динамика).
+ Управляет сбором аудиоданных, их обработкой и обновлением структуры транскрипции.
+ - Methods:
+   - __init__(self, mic_source, speaker_source, model, response_manager)
+     - Parameters:
+       - self
+       - mic_source
+       - speaker_source
+       - model
+       - response_manager
+   - transcribe_audio_queue(self, audio_queue)
+     - Docstring: Обрабатывает очередь аудиоданных, транскрибирует их и обновляет транскрипцию.
+     - Parameters:
+       - self
+       - audio_queue
+   - update_last_sample_and_phrase_status(self, who_spoke, data, time_spoken)
+     - Docstring: Обновляет последний семпл, буфер чанков и статус фразы для указанного источника.
+     - Parameters:
+       - self
+       - who_spoke
+       - data
+       - time_spoken
+   - process_mic_data(self, data, temp_file_name)
+     - Docstring: Обрабатывает данные с микрофона и сохраняет их в WAV файл.
+     - Parameters:
+       - self
+       - data
+       - temp_file_name
+   - process_speaker_data(self, data, temp_file_name)
+     - Docstring: Обрабатывает данные с динамика и сохраняет их в WAV файл.
+     - Parameters:
+       - self
+       - data
+       - temp_file_name
+   - update_transcript(self, who_spoke, text, time_spoken)
+     - Docstring: Обновляет различные структуры данных транскрипции на основе нового текста.
+     - Parameters:
+       - self
+       - who_spoke
+       - text
+       - time_spoken
+   - _reset_source_info(self, source_info, time_spoken)
+     - Docstring: Сбрасывает состояние информации об источнике для начала новой фразы.
+     - Parameters:
+       - self
+       - source_info
+       - time_spoken
+   - _update_all_transcripts(self, speaker_type, record, method='insert')
+     - Docstring: Обновляет все структуры данных транскрипции (обычную, структурированную, комбинированную).
+     - Parameters:
+       - self
+       - speaker_type
+       - record
+       - method (default: 'insert')
+   - get_transcript(self)
+     - Docstring: Возвращает отформатированные данные транскрипции для отображения.
+     - Parameters:
+       - self
+     - Return Type: dict
+   - get_lastContent(self)
+     - Docstring: Получает содержимое последней записи от "Speaker".
+     - Parameters:
+       - self
+     - Return Type: str
+   - clear_transcript_data(self)
+     - Docstring: Очищает все данные транскрипции и сбрасывает состояние источников аудио.
+     - Parameters:
+       - self
+       - source
+       - source_name
+   - adjust_for_noise(self, device_name, msg)
+     - Docstring: Регулирует распознаватель с учетом окружающего шума.
+     - Parameters:
+       - self
+       - device_name
+       - msg
+   - record_into_queue(self, audio_queue)
+     - Docstring: Записывает аудио в очередь.
+     - Parameters:
+       - self
+       - audio_queue
+
+### DefaultMicRecorder(BaseRecorder)
+ - Docstring: Класс для записи с микрофона по умолчанию.
+ - Methods:
+   - __init__(self)
+     - Parameters:
+       - self
+
+### DefaultSpeakerRecorder(BaseRecorder)
+ - Docstring: Класс для записи с динамиков по умолчанию.
+ - Methods:
+   - __init__(self)
+     - Parameters:
+       - self
+
