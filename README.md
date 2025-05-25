@@ -164,13 +164,14 @@ LLM_PROVIDER=openai
 LLM_MODEL_NAME=gpt-4o-mini
 ```
 
-   **Details on LLM Environment Variables:**
-    - `OPENAI_API_KEY`: Your API key for OpenAI services. This is required if `LLM_PROVIDER` is "openai" or if your custom LLM provider (specified via `LLM_API_BASE_URL`) uses an OpenAI-compatible API key.
-    - `LLM_PROVIDER`: Defines the LLM provider.
-        - Defaults to `"openai"`.
-        - If you're using a custom OpenAI-compatible service (like a local LLM that mimics the OpenAI API), you might set this to your provider's name or keep it as `"openai"`, depending on how you want to manage configurations. The primary driver for custom endpoints is `LLM_API_BASE_URL`.
-    - `LLM_API_BASE_URL`: (Optional) Use this to set a custom API endpoint for OpenAI-like services. This is crucial if you are using a local LLM (e.g., via LM Studio, Ollama with an OpenAI-compatible interface) or another cloud provider that offers an OpenAI-compatible API. If this is set, the `openai` library will direct requests to this URL.
-    - `LLM_MODEL_NAME`: Specifies the model to be used for generating responses (e.g., "gpt-4o-mini", "gpt-4", or a custom model name if using a local LLM). Defaults to `"gpt-4o-mini"`. Ensure the model selected is available at the configured API endpoint.
+**Details on LLM Environment Variables:**
+   
+- `OPENAI_API_KEY`: Your API key for OpenAI services. This is required if `LLM_PROVIDER` is "openai" or if your custom LLM provider (specified via `LLM_API_BASE_URL`) uses an OpenAI-compatible API key.
+- `LLM_PROVIDER`: Defines the LLM provider.
+   - Defaults to `"openai"`.
+   - If you're using a custom OpenAI-compatible service (like a local LLM that mimics the OpenAI API), you might set this to your provider's name or keep it as `"openai"`, depending on how you want to manage configurations. The primary driver for custom endpoints is `LLM_API_BASE_URL`.
+- `LLM_API_BASE_URL`: (Optional) Use this to set a custom API endpoint for OpenAI-like services. This is crucial if you are using a local LLM (e.g., via LM Studio, Ollama with an OpenAI-compatible interface) or another cloud provider that offers an OpenAI-compatible API. If this is set, the `openai` library will direct requests to this URL.
+- `LLM_MODEL_NAME`: Specifies the model to be used for generating responses (e.g., "gpt-4o-mini", "gpt-4", or a custom model name if using a local LLM). Defaults to `"gpt-4o-mini"`. Ensure the model selected is available at the configured API endpoint.
 
 ### 5. Verify Installation
 ```bash
